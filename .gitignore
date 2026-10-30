@@ -9,3 +9,5 @@ analysis/binary/*.txt
 __pycache__/
 *.pyc
 third_party/SDL2-*/
+analysis/*.json
+analysis/*.txt
