@@ -1,0 +1,89 @@
+CODED ARMS: CONTAGION - PORT NATIVO PARA PC (version de desarrollo)
+===================================================================
+
+Este paquete contiene el codigo de TU copia del juego recompilado para Windows x64.
+Es solo para tu uso personal: no lo distribuyas.
+
+Instalacion
+-----------
+1. Copia tu ISO de Coded Arms: Contagion (ULES-00718) en la carpeta "game" con el nombre
+   CodedArmsContagion.iso (tambien vale Coded.Arms.Contagion.iso).
+2. Ejecuta CodedArmsContagion.exe.
+
+Estado
+------
+- Funcionan: menus, videos, musica, perfiles, guardado y la mision tutorial.
+- Raton: camara directa (sin simular botones de la PSP), sin aceleracion e independiente
+  de los FPS.
+- Apuntar con la mira (ADS, clic derecho): el arma sube a los ojos con el punto de mira en
+  el centro, se cierra el campo de vision y baja la sensibilidad. Se puede disparar.
+  Ajustado arma por arma (las 13 del juego, ver weapons.ini): el rifle de francotirador usa
+  la mira telescopica del propio juego y la Vulcan solo acerca la vista (se lleva a la cadera).
+- 60 FPS (el maximo del juego; su logica va por tiempo real, la velocidad no cambia) o 30.
+- Los menus muestran las teclas del PC (Intro, Retroceso) en lugar de los botones de la PSP.
+- Consejo: en el tutorial, las puertas se abren cuando termina la conversacion por radio
+  (avanzala con Intro).
+- Teclas 1-5: el arma de esa ranura del HUD.
+
+Controles por defecto (controls.ini, seccion [bindings]; tambien en el menu F1)
+-------------------------------------------------------------------------------
+Siguen el esquema A del juego (Settings > Controls).
+  W A S D             moverse / pasos laterales (siempre corriendo)
+  Mayus (Shift)       andar (mas despacio) mientras se mantiene
+  Ctrl                andar con sigilo (el juego no tiene agacharse)
+  Raton               mirar / girar
+  Clic izquierdo      disparar (R)
+  Clic derecho        apuntar con la mira (ADS)
+  Espacio             saltar (L)
+  R / Flecha der.     recargar
+  Rueda / C           siguiente arma
+  1 - 5               arma de la ranura 1-5
+  Boton central / Z   mira telescopica del juego (francotirador)
+  Q                   fijar blanco (lock-on)
+  Tab / V             visor (SELECT)
+  Esc / P             pausa (START)
+  Intro               aceptar en menus (X)
+  Retroceso           volver en menus y dialogos (triangulo / circulo)
+  F1                  ajustes del PC (pausa el juego)
+  F10                 liberar / capturar el raton
+  F11, Alt+Intro      pantalla completa
+  Mando               stick izq. moverse, stick der. mirar, RT disparar, LT apuntar
+
+Configuracion (junto al ejecutable, o en la carpeta de preferencias del usuario)
+---------------------------------------------------------------------------------
+  graphics.ini  [video]: resolucion, pantalla completa, vsync, render_scale (0 = automatico),
+                widescreen (1 = ampliar a los lados), frame_rate (60 o 30).
+  controls.ini  [input]: sensibilidad del raton (mouse_sens_x/y), invert_y, invert_x,
+                mando, move_speed / walk_speed / creep_speed (inclinacion del stick con el
+                teclado: 1 = correr, por defecto al moverse; walk_speed con Mayus).
+                [bindings]: teclas (key:NOMBRE, mouse:left|right|middle|x1|x2|wheelup|
+                wheeldown, pad:BOTON, separadas por comas).
+                [ADS]:
+                  Enabled = true
+                  Mode = Hold                      (o Toggle)
+                  TransitionTime = 0.18            (segundos)
+                  NormalFOV = 85                   (grados en horizontal; el juego usa 80)
+                  ADSFOV = 65
+                  ADSMouseSensitivityMultiplier = 0.65
+                  HideCrosshairWhileADS = true
+                  AllowFiringWhileADS = true
+  weapons.ini   [Weapon.NOMBRE] por arma (nombre interno del juego; el registro muestra
+                "[GAME] weapon NOMBRE" al cambiar de arma):
+                  g01 pistola, g02 subfusil, g03 rifle de asalto, g04 escopeta, g05 Vulcan,
+                  g06 francotirador, g07 rifle Gauss, g08 rifle de pulsos, g09 arma de rayos,
+                  g10 generador Nova, g11 Data Leech, g13 lanzagranadas, g19 RPG.
+                Claves: Enabled, ADSFOV, ADSMouseSensitivityMultiplier (sustituyen a [ADS]);
+                Mode = Sight (el arma sube a los ojos), Zoom (solo acerca la vista) o Scope
+                (la mira telescopica del juego: clic derecho la abre y al soltar la cierra);
+                para Sight, SightOffsetX/Y y WeaponCloser mueven el punto de mira y Pitch, Yaw,
+                Roll (grados) sustituyen a los angulos medidos del arma (borralos para medir).
+                Las secciones que falten se anaden con los valores ajustados para cada arma.
+  config.ini    [game] iso, [audio] volume.
+
+Modo dev (F1 > Otros, o config.ini [dev] enabled = 1): F5 / F6 ponen en la cuarta ranura
+el arma anterior / siguiente de las 12 del juego (ademas de la pistola), con municion infinita,
+usando la carga de armas del propio juego. Sirve para probar todas las armas en cualquier nivel.
+F9 ejecuta dev.lua (junto a los .ini) en el Lua del juego; el resultado sale en el registro.
+
+Partidas guardadas: carpeta "memstick" junto a los .ini.
+Registro de errores: CodedArmsContagion.log junto al ejecutable.

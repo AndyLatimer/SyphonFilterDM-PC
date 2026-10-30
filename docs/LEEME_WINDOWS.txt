@@ -1,0 +1,16 @@
+SYPHON FILTER: DARK MIRROR - PORT NATIVO PARA PC (version de desarrollo)
+=======================================================================
+
+Este paquete contiene el codigo de TU copia del juego recompilado para Windows x64.
+Es solo para tu uso personal: no lo distribuyas.
+
+Instalacion
+-----------
+1. Copia tu ISO de Syphon Filter: Dark Mirror en la carpeta "game" con el nombre
+   SyphonFilterDarkMirror.iso.
+2. Ejecuta SyphonFilterDarkMirror.exe.
+
+Estado
+------
+Fase inicial: el estado real esta en PROGRESS.md. El registro de cada ejecucion se guarda en
+SyphonFilterDarkMirror.log junto al ejecutable.
