@@ -411,6 +411,17 @@ void registerIoHle() {
             }
             break;
         }
+        // FAT-level commands on fatms0: (Dark Mirror), as in PPSSPP: the insert/eject callback
+        // is notified "inserted" (1) right away; the FAT is reported enabled.
+        case 0x02415821: // MScmRegisterMSInsertEjectCallback
+            if (arg && A(c, 3) >= 4) notifyCallback((int)read32(arg), 1, 1);
+            break;
+        case 0x02415822: // MScmUnregisterMSInsertEjectCallback
+        case 0x02415823: // set FAT state
+            break;
+        case 0x02425823: // FAT enabled? 1 = yes
+            if (out && outLen >= 4) write32(out, 1);
+            break;
         case 0x02425824: // write protected? 0 = no
             if (out && outLen == 4) write32(out, 0);
             break;

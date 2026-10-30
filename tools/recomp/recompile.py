@@ -93,8 +93,7 @@ def main():
             print("BOOT.BIN is encrypted: decrypt it (tools/decrypt) and pass it with --elf")
             return 2
     os.makedirs(args.out, exist_ok=True)
-    with open(os.path.join(args.out, "game_id.txt"), "w") as f:
-        f.write(codegen.GAME_ID + "\n")
+    codegen.write_if_changed(os.path.join(args.out, "game_id.txt"), codegen.GAME_ID + "\n")
     mod = PspModule(data)
     mod.data_ranges = load_data_ranges(codegen.GAME_ID)
     for d0, d1 in mod.data_ranges:
