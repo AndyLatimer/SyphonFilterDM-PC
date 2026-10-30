@@ -8,7 +8,8 @@ Procedencia: **[CA]** reutilizado del motor de `AndyLatimer/CodedArmsPC` y
 Hitos 1, 2 y 4 completados; Hito 3 (runtime) avanzado. El juego recompilado arranca sin emulador y
 llega, con el renderizador GE→OpenGL, al **primer nivel en 3D** (Episodio 1, parte 1, refinería
 KemSynth, con su cinemática del motor) pasando por menús, perfil, guardado, dificultad, vídeo de
-introducción y briefing (2026-10-31). Falta jugar: controlar a Gabe (Hito 6).
+introducción y briefing (2026-10-31), y **se juega**: tras la cinemática del motor aparece el HUD y
+Gabe responde al stick (sale de la cobertura, gira, apunta); la pausa muestra la misión y objetivos.
 Último hito completado: 4 (renderizado de contenido auténtico). Disco: UCES-00310 (Europa).
 
 ## Verificado (2026-10-30, Linux, GCC 13, SDL2 2.30.9)
@@ -55,7 +56,15 @@ introducción y briefing (2026-10-31). Falta jugar: controlar a Gabe (Hito 6).
 - [x] Vídeos con cabecera PSMF incompleta (el juego solo pasa 0x54 bytes): `MediaEngine` declara el
   stream H.264 0xE0 (el FFmpeg mínimo no puede sondearlo como hace PPSSPP).
 
+- [x] **Control del jugador en el nivel** (`scripts/dev/play_first_level.sh 75`, entrada por el FIFO de
+  `ca_psprun`): HUD (radar, pistola con silenciador 12/24, salud, visión nocturna), movimiento con el
+  stick, retícula de apuntado, menú de pausa (Briefing/Inventory/Options/Restart/Quit con los
+  objetivos de la misión). Sin llamadas al sistema sin implementar.
+
 ## Parcialmente implementado / sin verificar
+- [ ] Disparo: R pulsado 0,3 s no cambió la munición (12/24); falta comprobar el esquema real de
+  controles del juego (y si R solo dispara con un blanco o mantenido).
+- [ ] Audio: no comprobado aún en este juego (`--wav`).
 - [ ] Descifrado real de un EBOOT.BIN `~PSP`: compila y rechaza contenedores inválidos; no hay
   vector de prueba real hasta tener un disco que lo necesite (puede que Dark Mirror no lo necesite).
 - [ ] Módulos descifrados comprimidos (gzip): detectados y rechazados con mensaje; sin inflado.
@@ -81,8 +90,8 @@ del módulo), cadenas y rutas de `src/frontend/`, `src/core/Config.cpp`, `src/ps
 `scripts/`. Movidos a `docs/cac/`: notas, progreso, ganchos y tablas de Contagion.
 
 ## Siguiente tarea concreta
-1. Primera misión: pasar la cinemática del motor y mover a Gabe (stick, cámara, disparo) con
-   `ca_psprun --control`; comprobar audio (`--wav`).
+1. Esquema de controles original (menú Options del juego) y disparo; audio con `--wav`.
+2. Ejecutable con ventana y entrada de PC (`SyphonFilterDarkMirror`): mapeo teclado/mando a la PSP.
 2. `cpu_diff` completo (tarda >15 min con 2 núcleos: lanzarlo en segundo plano).
 3. Probar el ejecutable con ventana (`SyphonFilterDarkMirror`) y la compilación de Windows.
 

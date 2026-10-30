@@ -26,3 +26,10 @@ Linux, GCC 13, SDL2 2.30.9 compilado desde fuente: 4/4 pruebas superadas. Config
 ISO sintética (BOOT.BIN vacío + EBOOT.BIN en claro): detecta `UCUS98641`, compila `sf_decrypt`
 del host, extrae el módulo y lo pasa al recompilador (que falla con el PRX de juguete de las
 pruebas, como se espera: no es un ejecutable real).
+
+## Ejecutado con el juego (2026-10-30/31, UCES-00310, Linux, Xvfb)
+- `ctest`: 4/4. Recompilación determinista (regenerada y comparada byte a byte).
+- `ca_psprun --gl`: aviso de autoguardado, título, perfil nuevo guardado y recargado, menús,
+  Story Mode, vídeo de introducción, briefing, primer nivel en 3D y control del jugador
+  (`scripts/dev/play_first_level.sh 75`, capturas `build/run/play_*.png`, no se suben).
+- `cpu_diff`: no terminó en 15 min con 2 núcleos; se relanza sin límite.
