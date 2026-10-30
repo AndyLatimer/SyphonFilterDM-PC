@@ -40,6 +40,29 @@ def parse_sfo(d):
     return out
 
 
+def report_unknown(mod, funcs):
+    """Functions holding undecodable words: usually data inside .text (see data.tsv)."""
+    from allegrex import decode
+    for f in sorted(funcs.values(), key=lambda f: f.start):
+        n = sum(decode(mod.word(a - mod.base), a).mn == "unknown" for a in range(f.start, f.end, 4))
+        if n:
+            print("  %08x-%08x: %d unknown words%s" % (f.start, f.end, n, " (address taken)" if f.indirect else ""))
+
+
+def load_data_ranges(game):
+    """games/<disc id>/data.tsv: start, end (exclusive) of data blocks inside BOOT.BIN's .text
+    that the function discovery must not take for code (their addresses are taken by the
+    code, which looks like function pointers)."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "games", game, "data.tsv")
+    out = []
+    if os.path.exists(path):
+        for line in open(path):
+            line = line.split("#", 1)[0].split()
+            if len(line) >= 2:
+                out.append((int(line[0], 16), int(line[1], 16)))
+    return out
+
+
 def disc_id(iso):
     """DISC_ID of the image without the dash, e.g. 'UCUS98641'."""
     return str(parse_sfo(read_iso_file(iso, "PSP_GAME/PARAM.SFO")).get("DISC_ID", "generic")).replace("-", "")
@@ -73,6 +96,9 @@ def main():
     with open(os.path.join(args.out, "game_id.txt"), "w") as f:
         f.write(codegen.GAME_ID + "\n")
     mod = PspModule(data)
+    mod.data_ranges = load_data_ranges(codegen.GAME_ID)
+    for d0, d1 in mod.data_ranges:
+        print("data in .text (not recompiled): %08x-%08x" % (d0, d1))
     funcs, starts = functions.discover(mod)
     modules = [(mod, funcs, starts, "")]
     # Further modules of the game recompiled with it (games/<disc id>/modules.tsv: path on the
@@ -92,6 +118,7 @@ def main():
     print("functions: %d, files: %d, imports: %d" % (len(funcs), len(files), len(mod.stubs)))
     if gen.unhandled:
         print("UNHANDLED mnemonics:", gen.unhandled)
+        report_unknown(mod, funcs)
         return 1
     return 0
 

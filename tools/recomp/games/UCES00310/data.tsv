@@ -1,0 +1,5 @@
+# Data inside BOOT.BIN's .text of Syphon Filter: Dark Mirror (UCES-00310): start, end (exclusive).
+# 0x08ba0080-0x08ba58e0: 22 KB of what looks like 4-bit texture data (rows of eeeeeeee, 2452...),
+# its address taken by the code. Starts after a jr ra + nop padding at 0x08ba0070, ends where a
+# normal prologue (addiu sp, sp, -32) begins. Taken for 6 functions it held 932 undecodable words.
+08ba0080  08ba58e0

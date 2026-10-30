@@ -34,13 +34,20 @@ def discover(mod):
     ranges = mod.code_ranges
     t0, t1 = ranges[0]
 
+    # Data embedded in the code section (games/<disc id>/data.tsv, set by recompile.py): never
+    # a function, and the code before it ends where it starts.
+    data = sorted(getattr(mod, "data_ranges", ()))
+
+    def in_data(a):
+        return any(d0 <= a < d1 for d0, d1 in data)
+
     def in_text(a):
-        return any(r0 <= a < r1 for r0, r1 in ranges)
+        return any(r0 <= a < r1 for r0, r1 in ranges) and not in_data(a)
 
     def range_end(a):
         for r0, r1 in ranges:
             if r0 <= a < r1:
-                return r1
+                return min([r1] + [d0 for d0, _ in data if a < d0 <= r1])
         return a
 
     starts = {mod.entry} if mod.entry is not None else set()
@@ -50,6 +57,7 @@ def discover(mod):
             if w >> 26 == 3:  # jal
                 starts.add(((off + base + 4) & 0xF0000000) | ((w & 0x03FFFFFF) << 2))
     starts |= {r0 for r0, _ in ranges}
+    starts |= {d1 for _, d1 in data}  # code resumes after an embedded data block
     # Exported functions (a module's library: PSMF_JK.PRX's jkPsmfPlayer, BOOT.BIN's sceLibc).
     starts |= {e.addr for e in getattr(mod, "exports", ()) if in_text(e.addr)}
     # Code pointers stored in data, or built in code with relocated lui/addiu pairs.
