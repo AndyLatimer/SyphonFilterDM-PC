@@ -65,6 +65,9 @@ void describeCrash(FILE* out);
 void dumpThreads();
 // Blocks the calling guest thread until `ready()` returns true or `timeoutUs` (0 = none)
 // elapses. `ready` is evaluated under the kernel lock. Returns false on timeout.
+// PSP wait types (SceKernelThreadInfo.waitType), for the thread that waits next.
+enum : uint32_t { kWaitSleep = 1, kWaitDelay = 2, kWaitSema = 3, kWaitEventFlag = 4, kWaitThreadEnd = 9, kWaitVblank = 12 };
+void setNextWait(uint32_t type, uint32_t id);
 bool waitUntil(const std::function<bool()>& ready, uint64_t timeoutUs, bool processCallbacks = false);
 // Media Engine job queue (hle_sas.cpp): microseconds until a job of `us` queued now finishes.
 uint64_t meScheduleJob(uint64_t us);

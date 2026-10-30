@@ -120,6 +120,9 @@ struct Thread {
     bool processCallbacks = false;
     int exitStatus = 0;
     int wakeupCount = 0;
+    // What the thread waits for, as SceKernelThreadInfo reports it (waitType, waitId): games
+    // check it (Dark Mirror's sound streaming waits until its threads block on their semaphores).
+    uint32_t waitType = 0, waitId = 0;
     std::function<void()> hostBody; // HLE helper thread: runs host code instead of guest code
     int lastImport = -1;            // debugging (dumpThreads): its last system call
     uint64_t hleCalls = 0, hleCallsDumped = 0; // debugging: system calls made (since the last dump)
@@ -255,16 +258,25 @@ static void schedule(std::unique_lock<std::mutex>& lk, Thread* self) {
 int currentThreadId() { return t_self ? t_self->id : 0; }
 extern "C" int ca_trace_thread_id() { return currentThreadId(); }
 
+// The kind of wait the next waitUntil on this thread is (set by the HLE function that waits).
+static thread_local uint32_t t_nextWaitType = 0, t_nextWaitId = 0;
+void setNextWait(uint32_t type, uint32_t id) { t_nextWaitType = type; t_nextWaitId = id; }
+
 bool waitUntil(const std::function<bool()>& ready, uint64_t timeoutUs, bool processCallbacks) {
     std::unique_lock<std::mutex> lk(g_km);
     Thread* self = t_self;
+    const uint32_t wtype = t_nextWaitType, wid = t_nextWaitId;
+    t_nextWaitType = t_nextWaitId = 0;
     if (ready && ready()) return true;
+    self->waitType = wtype;
+    self->waitId = wid;
     self->waitCond = ready;
     self->deadline = timeoutUs ? nowUs() + timeoutUs : 0;
     self->timedOut = false;
     self->processCallbacks = processCallbacks;
     self->state = TState::Waiting;
     schedule(lk, self);
+    self->waitType = self->waitId = 0;
     return !self->timedOut;
 }
 
@@ -275,8 +287,11 @@ void delayCurrentThread(uint64_t us, bool processCallbacks) {
     self->waitCond = nullptr;
     self->deadline = nowUs() + std::max<uint64_t>(us, 1);
     self->processCallbacks = processCallbacks;
+    self->waitType = kWaitDelay;
+    self->waitId = 0;
     self->state = TState::Waiting;
     schedule(lk, self);
+    self->waitType = 0;
 }
 
 void notifyStateChanged() {
@@ -1106,6 +1121,7 @@ static void registerCoreHle() {
     HLE(sceKernelDelayThreadCB) { runCallbacks(); delayCurrentThread(A(c, 0), true); runCallbacks(); ret(c, 0); });
     HLE(sceKernelSleepThread) {
         Thread* self = t_self;
+        setNextWait(kWaitSleep, 0);
         waitUntil([self] {
             if (self->wakeupCount > 0) { self->wakeupCount--; return true; }
             return false;
@@ -1127,6 +1143,7 @@ static void registerCoreHle() {
     HLE(sceKernelWaitThreadEnd) {
         int id = (int)A(c, 0);
         uint32_t tptr = A(c, 1);
+        setNextWait(kWaitThreadEnd, (uint32_t)id);
         bool ok = waitUntil([id] {
             Thread* t = findThread(id);
             return !t || t->state == TState::Dead || t->state == TState::Dormant;
@@ -1179,6 +1196,7 @@ static void registerCoreHle() {
         int id = (int)A(c, 0), need = (int)A(c, 1);
         uint32_t tptr = A(c, 2);
         bool exists = true;
+        setNextWait(kWaitSema, (uint32_t)id);
         bool ok = waitUntil([id, need, &exists] {
             auto it = g_semas.find(id);
             if (it == g_semas.end()) { exists = false; return true; }
@@ -1231,6 +1249,7 @@ static void registerCoreHle() {
         if (bits == 0) { ret(c, ERR_EVF_ILPAT); return; }
         bool exists = true;
         uint32_t matched = 0;
+        setNextWait(kWaitEventFlag, (uint32_t)id);
         bool ok = waitUntil([id, bits, mode, &exists, &matched] {
             auto it = g_evfs.find(id);
             if (it == g_evfs.end()) { exists = false; return true; }
@@ -1379,6 +1398,7 @@ static void registerCoreHle() {
         std::strncpy(reinterpret_cast<char*>(&f[1]), t->name.c_str(), 31);
         f[9] = t->attr; f[10] = kStatus[(int)t->state]; f[11] = t->entry; f[12] = t->stackAddr;
         f[13] = t->stackSize; f[14] = t->gp; f[15] = (uint32_t)t->priority; f[16] = (uint32_t)t->priority;
+        if (t->state == TState::Waiting) { f[17] = t->waitType; f[18] = t->waitId; }
         f[19] = (uint32_t)t->wakeupCount; f[20] = (uint32_t)t->exitStatus;
         for (uint32_t i = 0; i < 26 && i * 4 < size; ++i) write32(info + i * 4, f[i]);
         ret(c, 0);
@@ -1388,6 +1408,7 @@ static void registerCoreHle() {
         uint32_t tptr = A(c, 2);
         bool exists = true;
         runCallbacks();
+        setNextWait(kWaitSema, (uint32_t)id);
         bool ok = waitUntil([id, need, &exists] {
             auto it = g_semas.find(id);
             if (it == g_semas.end()) { exists = false; return true; }
@@ -1510,6 +1531,7 @@ static void registerCoreHle() {
         bool exists = true;
         uint32_t matched = 0;
         runCallbacks();
+        setNextWait(kWaitEventFlag, (uint32_t)id);
         bool ok = waitUntil([id, bits, mode, &exists, &matched] {
             auto it = g_evfs.find(id);
             if (it == g_evfs.end()) { exists = false; return true; }
@@ -1655,6 +1677,7 @@ static void registerCoreHle() {
     HLE(sceKernelSleepThreadCB) { // SleepThread that runs the thread's callbacks while it waits
         Thread* self = t_self;
         runCallbacks();
+        setNextWait(kWaitSleep, 0);
         waitUntil([self] {
             if (self->wakeupCount > 0) { self->wakeupCount--; return true; }
             return false;

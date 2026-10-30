@@ -205,9 +205,18 @@ bool MediaEngine::SetupStreams() {
 	}
 	int numStreams = *(u16_be *)&m_mpegheader[0x80];
 	if (numStreams <= 0 || numStreams > 8) {
-		// Looks crazy.  Let's bail out and let FFmpeg handle it.
-		WARN_LOG_REPORT(Log::ME, "Could not setup streams, unexpected stream count: %d", numStreams);
-		return false;
+		// PC port change: PPSSPP bails out here and lets FFmpeg probe the stream, which needs
+		// FFmpeg's raw h264 demuxer for the probe; the port's minimal FFmpeg has only mpegps.
+		// Syphon Filter: Dark Mirror hands sceMpeg only the first 0x54 bytes of the PSMF header,
+		// so the stream table is garbage. PSMF video is always H.264 on stream 0xE0 (+n):
+		// declare the expected video streams as SetupStreams would for a valid table.
+		WARN_LOG_REPORT(Log::ME, "Could not setup streams, unexpected stream count: %d; assuming PSMF video 0xE0", numStreams);
+		const int videoStreams = std::max(1, m_expectedVideoStreams);
+		for (int i = 0; i < videoStreams; i++) {
+			if (!addVideoStream(i))
+				return false;
+		}
+		return true;
 	}
 
 	// Looking good.  Let's add those streams.
