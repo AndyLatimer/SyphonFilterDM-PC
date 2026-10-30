@@ -5,10 +5,10 @@ Ningún hito se marca como hecho sin evidencia reproducible (`TESTING.md`).
 | Hito | Entregable | Base reutilizada de CA/CAC | Estado |
 |---|---|---|---|
 | 0. Motor | runtime, recompilador, GPU, audio, vídeo, guardado, front end generalizados por DISC_ID | todo | ✅ compila; pruebas sin juego 4/4 |
-| 1. Análisis | informe del disco en `REVERSE_ENGINEERING.md` | `inspect_iso.py`, `gen_imports.py` | ⏳ falta la ISO |
-| 2. Recompilación | BOOT.BIN recompilado sin instrucciones sin soporte; `cpu_diff` | recompilador + `cpu_diff` | ⏳ |
-| 3. Runtime | arranque en `ca_psprun` hasta el primer fotograma; HLE que falte | kernel HLE (~270 funciones) | ⏳ |
-| 4. Renderizado | menú y escena auténticos en ventana | GE→OpenGL 3.3 | ⏳ |
+| 1. Análisis | informe del disco en `REVERSE_ENGINEERING.md` | `inspect_iso.py`, `gen_imports.py` | ✅ UCES-00310 |
+| 2. Recompilación | BOOT.BIN recompilado sin instrucciones sin soporte; `cpu_diff` | recompilador + `cpu_diff` | ✅ 21 765 funciones (`cpu_diff` pendiente) |
+| 3. Runtime | arranque en `ca_psprun` hasta el primer fotograma; HLE que falte | kernel HLE (~270 funciones) | 🔶 hasta el primer nivel sin llamadas sin implementar |
+| 4. Renderizado | menú y escena auténticos en ventana | GE→OpenGL 3.3 | ✅ menús, vídeo y nivel 3D (Xvfb) |
 | 5. Controles | teclado/ratón (cámara directa por gancho), DualSense USB, remapeo | `Input.cpp`, ratón directo de CAC | ⏳ |
 | 6. Jugabilidad | primera misión con objetivos, cámara, sonido | — | ⏳ |
 | 7. Campaña | todas las misiones, progresión documentada | — | ⏳ |

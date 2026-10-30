@@ -5,9 +5,11 @@ Procedencia: **[CA]** reutilizado del motor de `AndyLatimer/CodedArmsPC` y
 **[NUEVO]** escrito para este proyecto.
 
 ## Estado actual
-Hitos 1 y 2 completados; Hito 3 (runtime) y 4 (renderizado) en curso. El juego recompilado arranca
-sin emulador y llega, con el renderizador GE→OpenGL, hasta el menú de Un jugador (2026-10-30).
-Último hito completado: 2 (recompilación). Disco: UCES-00310 (Europa).
+Hitos 1, 2 y 4 completados; Hito 3 (runtime) avanzado. El juego recompilado arranca sin emulador y
+llega, con el renderizador GE→OpenGL, al **primer nivel en 3D** (Episodio 1, parte 1, refinería
+KemSynth, con su cinemática del motor) pasando por menús, perfil, guardado, dificultad, vídeo de
+introducción y briefing (2026-10-31). Falta jugar: controlar a Gabe (Hito 6).
+Último hito completado: 4 (renderizado de contenido auténtico). Disco: UCES-00310 (Europa).
 
 ## Verificado (2026-10-30, Linux, GCC 13, SDL2 2.30.9)
 - [x] [CA] Motor completo integrado: recompilador Allegrex→C, runtime HLE, GPU GE→OpenGL, SAS,
@@ -45,6 +47,14 @@ sin emulador y llega, con el renderizador GE→OpenGL, hasta el menú de Un juga
 - [x] El generador solo reescribe el C que cambia (salida determinista, comprobada byte a byte): una
   reconfiguración ya no recompila 100 MB de C.
 
+- [x] **Story Mode → Normal → vídeo de introducción (PSMF/H.264, decodificado) → briefing
+  "Episode 1, Part 1: Insertion Point Alpha" → nivel REFIN_A1 cargado y renderizado en 3D**
+  (escenario nevado, iluminación, partículas, personaje animado en cinemática).
+- [x] Estado de espera de los hilos (`waitType`/`waitId` en `sceKernelReferThreadStatus`): el
+  streaming de sonido espera a que sus hilos bloqueen en sus semáforos antes de un vídeo.
+- [x] Vídeos con cabecera PSMF incompleta (el juego solo pasa 0x54 bytes): `MediaEngine` declara el
+  stream H.264 0xE0 (el FFmpeg mínimo no puede sondearlo como hace PPSSPP).
+
 ## Parcialmente implementado / sin verificar
 - [ ] Descifrado real de un EBOOT.BIN `~PSP`: compila y rechaza contenedores inválidos; no hay
   vector de prueba real hasta tener un disco que lo necesite (puede que Dark Mirror no lo necesite).
@@ -71,9 +81,12 @@ del módulo), cadenas y rutas de `src/frontend/`, `src/core/Config.cpp`, `src/ps
 `scripts/`. Movidos a `docs/cac/`: notas, progreso, ganchos y tablas de Contagion.
 
 ## Siguiente tarea concreta
-1. Story Mode → primera misión: vídeo (PSMF), carga de nivel y primer control del jugador.
+1. Primera misión: pasar la cinemática del motor y mover a Gabe (stick, cámara, disparo) con
+   `ca_psprun --control`; comprobar audio (`--wav`).
 2. `cpu_diff` completo (tarda >15 min con 2 núcleos: lanzarlo en segundo plano).
 3. Probar el ejecutable con ventana (`SyphonFilterDarkMirror`) y la compilación de Windows.
 
-Secuencia reproducible hasta el menú de Un jugador (con un perfil ya guardado en `build/run/memstick`):
-`ca_psprun --iso ... --gl --seconds 36 --press CROSS@21 --press START@24 --press CROSS@28 --shot 35:menu.png`
+Secuencia reproducible hasta el primer nivel (con un perfil ya guardado en `build/run/memstick`):
+`ca_psprun --iso ... --gl --seconds 125 --press CROSS@21 --press START@24 --press CROSS@28
+ --press DOWN@31 --press CROSS@32.5 --press CROSS@46 --press START@55 --press CROSS@57 --press CROSS@75
+ --shot 90:nivel.png` (aviso → título → Un jugador → Story → Normal → saltar vídeo → briefing → nivel).
