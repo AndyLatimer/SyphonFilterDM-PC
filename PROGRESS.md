@@ -5,8 +5,9 @@ Procedencia: **[CA]** reutilizado del motor de `AndyLatimer/CodedArmsPC` y
 **[NUEVO]** escrito para este proyecto.
 
 ## Estado actual
-Hito 0 (motor) completado. **Bloqueado para el Hito 1: falta la ISO del usuario** en `game/`.
-Último hito completado: ninguno de los hitos 1–9 (ver `ROADMAP.md`).
+Hitos 1 y 2 completados; Hito 3 (runtime) y 4 (renderizado) en curso. El juego recompilado arranca
+sin emulador y llega, con el renderizador GE→OpenGL, hasta el menú de Un jugador (2026-10-30).
+Último hito completado: 2 (recompilación). Disco: UCES-00310 (Europa).
 
 ## Verificado (2026-10-30, Linux, GCC 13, SDL2 2.30.9)
 - [x] [CA] Motor completo integrado: recompilador Allegrex→C, runtime HLE, GPU GE→OpenGL, SAS,
@@ -24,6 +25,25 @@ Hito 0 (motor) completado. **Bloqueado para el Hito 1: falta la ISO del usuario*
 - [x] Pruebas sin juego: `ctest` 4/4 (`inspect_iso`, `savedata`, `boot_module`, `recomp_tools`).
 - [x] Configuración con ISO sintética (BOOT.BIN vacío + EBOOT.BIN en claro): ID detectado,
   `sf_decrypt` del host compilado y ejecutado, módulo entregado al recompilador.
+
+## Verificado con el juego (UCES-00310, Linux, `ca_psprun --gl` en Xvfb)
+- [x] Análisis del disco (`REVERSE_ENGINEERING.md`): BOOT.BIN en claro, 267 importaciones con nombre.
+- [x] Recompilación: 21 765 funciones, 0 instrucciones sin soporte (datos en `.text` declarados en
+  `tools/recomp/games/UCES00310/data.tsv`). Compila y enlaza `SyphonFilterDarkMirror` y `ca_psprun`.
+- [x] Arranque: sonido SCREAM/SAS, hilos de streaming, carga de HGZ/HOG, música ATRAC3+.
+- [x] Memory Stick: el juego usa comandos FAT (`fatms0:` 0x02415821/0x02425823), añadidos; sin ellos
+  mostraba "Memory Stick not found".
+- [x] Secuencia observada con capturas: aviso de autoguardado → título animado ("PRESS THE START
+  BUTTON") → crear perfil con el teclado propio del juego → **guardado en `ms0:/PSP/SAVEDATA/UCES003100000`**
+  ("Save completed") → al volver a arrancar, el perfil se carga → **menú principal** (Single Player,
+  Multiplayer, Options, Profiles, Game Sharing) → **menú de Un jugador** (Training, Story, Mission,
+  Career Rating, Locked Files).
+- [x] HLE añadido (PPSSPP): tiempo de sistema, PollEventFlag, ReferSemaStatus, SleepThreadCB,
+  dispatch, GetThreadmanIdList, MaxFreeMemSize, cachés, GPO, ReadBufferPositive, latch del mando,
+  DmacMemcpy, UMD, energía, AtracGetNextSample, IoChangeAsyncPriority. Ninguna llamada sin implementar
+  hasta el menú de Un jugador.
+- [x] El generador solo reescribe el C que cambia (salida determinista, comprobada byte a byte): una
+  reconfiguración ya no recompila 100 MB de C.
 
 ## Parcialmente implementado / sin verificar
 - [ ] Descifrado real de un EBOOT.BIN `~PSP`: compila y rechaza contenedores inválidos; no hay
@@ -51,9 +71,9 @@ del módulo), cadenas y rutas de `src/frontend/`, `src/core/Config.cpp`, `src/ps
 `scripts/`. Movidos a `docs/cac/`: notas, progreso, ganchos y tablas de Contagion.
 
 ## Siguiente tarea concreta
-1. Copiar la ISO a `game/SyphonFilterDarkMirror.iso` y ejecutar
-   `python3 tools/inspect/inspect_iso.py game/SyphonFilterDarkMirror.iso --json analysis/inspect.json`.
-2. Rellenar `REVERSE_ENGINEERING.md` §1–2 con lo verificado; generar
-   `tools/recomp/games/<ID>/imports.tsv` con `gen_imports.py`.
-3. Recompilar (`cmake -DSF_GAME_ISO=...`), pasar `cpu_diff` y arrancar en `ca_psprun --trace`
-   hasta la primera función HLE que falte.
+1. Story Mode → primera misión: vídeo (PSMF), carga de nivel y primer control del jugador.
+2. `cpu_diff` completo (tarda >15 min con 2 núcleos: lanzarlo en segundo plano).
+3. Probar el ejecutable con ventana (`SyphonFilterDarkMirror`) y la compilación de Windows.
+
+Secuencia reproducible hasta el menú de Un jugador (con un perfil ya guardado en `build/run/memstick`):
+`ca_psprun --iso ... --gl --seconds 36 --press CROSS@21 --press START@24 --press CROSS@28 --shot 35:menu.png`

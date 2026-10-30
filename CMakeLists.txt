@@ -228,6 +228,7 @@ if(SF_GAME_ISO)
   file(GLOB CA_RECOMP_INPUTS ${CMAKE_SOURCE_DIR}/tools/recomp/*.py ${CMAKE_SOURCE_DIR}/tools/recomp/games/*/*.tsv)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${CA_RECOMP_INPUTS})
   file(GLOB CA_GEN_SOURCES ${CA_GEN_DIR}/*.c)
+  list(FILTER CA_GEN_SOURCES EXCLUDE REGEX "cpu_tests\\.c$") # the cpu_diff test, generated next to the code
   add_library(ca_guest OBJECT ${CA_GEN_SOURCES})
   target_include_directories(ca_guest PRIVATE src ${CA_GEN_DIR})
   if(NOT MSVC)
