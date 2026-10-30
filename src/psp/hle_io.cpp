@@ -184,6 +184,7 @@ bool isUmd(const std::string& path) {
 } // namespace
 
 void registerIoHle() {
+    registerHle("sceIoChangeAsyncPriority", [](Ctx* c) { ret(c, 0); }); // Dark Mirror
     registerHle("sceIoOpen", [](Ctx* c) {
         std::string path = readString(A(c, 0));
         int fd = openFile(path, A(c, 1));

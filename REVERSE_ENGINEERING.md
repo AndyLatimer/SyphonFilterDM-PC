@@ -32,6 +32,12 @@ Fuente: `tools/inspect/inspect_iso.py` (informe en `analysis/inspect.json`, no s
   - `Code/Libs/Rtime/.../scertpp` (red SCE-RT/Medius: sesiones, clanes, ladder) — no se implementará.
 - Nombres de clases C++ (RTTI) presentes: `cGameCamera`, `cCinemaCamera`, `cPopCamera`,
   `cGameGobjController`, `cAIMessage`… Útiles para localizar cámara y control del jugador (Hito 5).
+- Control y cámara (cadenas, sin analizar aún el código): clases `cPlayerCamera`, `cPlayerController`
+  (`PlayerController.cc`), `cPlayerControls`, `cInputMap`/`cBaseInputMap` (carga
+  `COMMON\inputmap.dat` con `LoadInputMap`), `cInputSys`; opción `OPT_AIM_INVERT`. Cientos de
+  parámetros de cámara con nombre por modo: `CAMERA_Mode_<Climb|Crawl|BuddyClimb|...>_CamArm_
+  {Extension,PivotOffset}_{Forw,Rght,Up}` y `_Rotation_{Horz,Vert}` — candidatos para una cámara
+  al hombro sin tocar la lógica (cambiando los valores del propio juego).
 
 ## 4. Formatos de datos (cabeceras observadas)
 | Ext. | N.º | MB | Formato observado |

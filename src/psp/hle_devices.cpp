@@ -105,6 +105,28 @@ uint32_t audioOutput(int ch, int volL, int volR, uint32_t buf, bool blocking) {
 
 } // namespace
 
+// sceCtrl latch state (PPSSPP sceCtrl.cpp): updated from the current buttons when read.
+static uint32_t g_latchPrev = 0, g_latchMake = 0, g_latchBreak = 0;
+static int g_latchCount = 0;
+static std::mutex g_latchMutex;
+static int ctrlLatch(uint32_t out, bool reset) {
+    std::lock_guard<std::mutex> lk(g_latchMutex);
+    const uint32_t cur = host::g_ctrl.buttons.load();
+    g_latchMake |= cur & ~g_latchPrev;
+    g_latchBreak |= g_latchPrev & ~cur;
+    if (cur != g_latchPrev) ++g_latchCount;
+    g_latchPrev = cur;
+    if (out) {
+        write32(out, g_latchMake);
+        write32(out + 4, g_latchBreak);
+        write32(out + 8, cur);
+        write32(out + 12, ~cur);
+    }
+    const int n = g_latchCount;
+    if (reset) { g_latchMake = g_latchBreak = 0; g_latchCount = 0; }
+    return n;
+}
+
 void registerDeviceHle() {
     using namespace host;
     // ---- sceDisplay
@@ -242,6 +264,38 @@ void registerDeviceHle() {
         std::lock_guard<std::mutex> lk(g_audioMutex);
         ret(c, (uint32_t)(g_audio[kSrcChannel].queue.size() / 2));
     });
+
+    // ---- Added for Syphon Filter: Dark Mirror (semantics from PPSSPP Core/HLE)
+    // sceCtrlReadBufferPositive waits for the next sample (one per vblank) unlike Peek.
+    registerHle("sceCtrlReadBufferPositive", [](Ctx* c) {
+        waitVblank(false);
+        uint32_t p = A(c, 0);
+        int n = (int)A(c, 1);
+        for (int i = 0; i < n; ++i, p += 16) {
+            write32(p, (uint32_t)nowUs());
+            write32(p + 4, g_ctrl.buttons.load());
+            write8(p + 8, g_ctrl.lx.load());
+            write8(p + 9, g_ctrl.ly.load());
+            for (int k = 10; k < 16; ++k) write8(p + k, 0);
+        }
+        ret(c, (uint32_t)n);
+    });
+    // Latch: buttons pressed (make) / released (break) since the last ReadLatch, and the
+    // current pressed/released state. Peek keeps the latch, Read clears it.
+    registerHle("sceCtrlPeekLatch", [](Ctx* c) { ret(c, (uint32_t)ctrlLatch(A(c, 0), false)); });
+    registerHle("sceCtrlReadLatch", [](Ctx* c) { ret(c, (uint32_t)ctrlLatch(A(c, 0), true)); });
+    registerHle("sceCtrlSetIdleCancelThreshold", [](Ctx* c) { ret(c, 0); });
+    registerHle("sceGeEdramGetSize", [](Ctx* c) { ret(c, 0x00200000); });
+    registerHle("sceDmacMemcpy", [](Ctx* c) {
+        const uint32_t dst = A(c, 0), src = A(c, 1), size = A(c, 2);
+        if (size && validAddress(dst) && validAddress(src) && validAddress(dst + size - 1) && validAddress(src + size - 1))
+            std::memmove(hostPtr(dst), hostPtr(src), size);
+        ret(c, 0);
+    });
+    registerHle("sceRtcGetTickResolution", [](Ctx* c) { ret(c, 1000000); });
+    registerHle("sceUmdWaitDriveStatWithTimer", [](Ctx* c) { ret(c, 0); }); // the disc is always ready
+    registerHle("sceUmdDeactivate", [](Ctx* c) { ret(c, 0); });
+    registerHle("scePowerUnregisterCallback", [](Ctx* c) { ret(c, 0); });
 
     // ---- Added for Coded Arms: Contagion
     registerHle("sceDisplayGetFrameBuf", [](Ctx* c) {

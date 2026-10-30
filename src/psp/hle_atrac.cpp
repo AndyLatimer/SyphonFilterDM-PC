@@ -325,6 +325,14 @@ void registerAtracHle() {
         if (int e = validateData(a)) { ret(c, (u32)e); return; }
         ret(c, (u32)a->SetLoopNum((int)A(c, 1)));
     });
+    registerHle("sceAtracGetNextSample", [](Ctx* c) { // PPSSPP sceAtrac.cpp (Dark Mirror)
+        std::lock_guard<std::mutex> lk(g_atracMutex);
+        AtracBase* a = getAtrac((int)A(c, 0));
+        if (int e = validateData(a)) { ret(c, (u32)e); return; }
+        const u32 n = a->GetNextSamples();
+        if (Memory::IsValidAddress(A(c, 1))) psp::write32(A(c, 1), n);
+        ret(c, 0);
+    });
     registerHle("sceAtracGetRemainFrame", [](Ctx* c) {
         std::lock_guard<std::mutex> lk(g_atracMutex);
         AtracBase* a = getAtrac((int)A(c, 0));

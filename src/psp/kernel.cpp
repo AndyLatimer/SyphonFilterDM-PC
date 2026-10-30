@@ -1609,6 +1609,80 @@ static void registerCoreHle() {
         ret(c, 0);
     });
 
+    // ---- Added for Syphon Filter: Dark Mirror (semantics from PPSSPP Core/HLE) -----------
+    HLE(sceKernelGetSystemTime) { // SceKernelSysClock* (64-bit microseconds)
+        const uint64_t t = nowUs();
+        if (A(c, 0)) { write32(A(c, 0), (uint32_t)t); write32(A(c, 0) + 4, (uint32_t)(t >> 32)); }
+        ret(c, 0);
+    });
+    HLE(sceKernelGetSystemTimeWide) { ret64(c, nowUs()); });
+    HLE(sceKernelSysClock2USec) { // (clock*, seconds*, microseconds*)
+        const uint64_t t = (uint64_t)read32(A(c, 0)) | ((uint64_t)read32(A(c, 0) + 4) << 32);
+        if (A(c, 1)) write32(A(c, 1), (uint32_t)(t / 1000000));
+        if (A(c, 2)) write32(A(c, 2), (uint32_t)(t % 1000000));
+        ret(c, 0);
+    });
+    HLE(sceKernelPollEventFlag) { // as WaitEventFlag, without waiting
+        std::lock_guard<std::mutex> lk(g_km);
+        uint32_t bits = A(c, 1), mode = A(c, 2), outp = A(c, 3);
+        if (bits == 0) { ret(c, ERR_EVF_ILPAT); return; }
+        auto it = g_evfs.find((int)A(c, 0));
+        if (it == g_evfs.end()) { ret(c, ERR_UNKNOWN_EVFID); return; }
+        uint32_t p = it->second.pattern;
+        bool hit = (mode & 1) ? (p & bits) != 0 : (p & bits) == bits;
+        if (outp) write32(outp, p);
+        if (!hit) { ret(c, ERR_EVF_COND); return; }
+        if (mode & 0x20) it->second.pattern &= ~bits;
+        if (mode & 0x10) it->second.pattern = 0;
+        ret(c, 0);
+    });
+    HLE(sceKernelReferSemaStatus) { // SceKernelSemaInfo: size, name[32], attr, init, current, max, waiters
+        std::lock_guard<std::mutex> lk(g_km);
+        auto it = g_semas.find((int)A(c, 0));
+        if (it == g_semas.end()) { ret(c, ERR_UNKNOWN_SEMID); return; }
+        uint32_t info = A(c, 1), size = read32(info);
+        uint32_t f[14] = {};
+        f[0] = size;
+        std::strncpy(reinterpret_cast<char*>(&f[1]), it->second.name.c_str(), 31);
+        f[9] = it->second.attr;
+        f[10] = (uint32_t)it->second.count; // initial count is not kept
+        f[11] = (uint32_t)it->second.count;
+        f[12] = (uint32_t)it->second.max;
+        f[13] = 0;
+        for (uint32_t i = 0; i < 14 && i * 4 < size; ++i) write32(info + i * 4, f[i]);
+        ret(c, 0);
+    });
+    HLE(sceKernelSleepThreadCB) { // SleepThread that runs the thread's callbacks while it waits
+        Thread* self = t_self;
+        runCallbacks();
+        waitUntil([self] {
+            if (self->wakeupCount > 0) { self->wakeupCount--; return true; }
+            return false;
+        }, 0, true);
+        ret(c, 0);
+    });
+    // Dispatch (preemption) suspension: threads already only switch at HLE calls and polls,
+    // so report "was enabled" and accept the restore.
+    HLE(sceKernelSuspendDispatchThread) { ret(c, 1); });
+    HLE(sceKernelResumeDispatchThread) { ret(c, 0); });
+    HLE(sceKernelGetThreadmanIdList) { // (type, buf, maxCount, count*): threads only (type 1)
+        std::lock_guard<std::mutex> lk(g_km);
+        uint32_t type = A(c, 0), buf = A(c, 1), max = A(c, 2), outCount = A(c, 3);
+        uint32_t n = 0;
+        if (type == 1)
+            for (auto& [id, t] : g_threads) {
+                if (n < max && buf) write32(buf + 4 * n, (uint32_t)id);
+                ++n;
+            }
+        if (outCount) write32(outCount, n);
+        ret(c, std::min(n, max));
+    });
+    HLE(sceKernelMaxFreeMemSize) { std::lock_guard<std::mutex> lk(g_km); ret(c, g_userPartition.largestFree()); });
+    HLE(sceKernelIsCpuIntrEnable) { ret(c, 1); });
+    HLE(sceKernelDcacheWritebackInvalidateAll) { ret(c, 0); });
+    HLE(sceKernelDcacheInvalidateRange) { ret(c, 0); });
+    HLE(sceKernelSetGPO) { ret(c, 0); }); // debug LEDs
+
     extern void registerIoHle();
     extern void registerDeviceHle();
     extern void registerSasHle();
