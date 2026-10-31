@@ -17,6 +17,13 @@ if(WIN32 AND NOT SDL2_DIR)
 endif()
 find_package(SDL2 REQUIRED CONFIG)
 
+# Static C/C++ runtime on MinGW: GCC's libgcc/libstdc++, or with llvm-mingw (cmake/llvm-mingw.cmake)
+# compiler-rt/libc++/libunwind, which -static alone selects.
+set(SF_STATIC_RUNTIME -static-libgcc -static-libstdc++)
+if(CA_LLVM_MINGW)
+  set(SF_STATIC_RUNTIME "")
+endif()
+
 if(MSVC)
   add_compile_options(/W4 /permissive-)
 else()
@@ -250,7 +257,7 @@ if(SF_GAME_ISO)
     # Threads created without an explicit size get the executable's stack reserve: 1 MB by
     # default on Windows (8 MB on Linux); every guest thread runs on one. The map file turns
     # crash report offsets (SyphonFilterDarkMirror.exe+0x...) into functions.
-    target_link_options(SyphonFilterDarkMirror PRIVATE -static-libgcc -static-libstdc++ -static -Wl,--stack,16777216
+    target_link_options(SyphonFilterDarkMirror PRIVATE ${SF_STATIC_RUNTIME} -static -Wl,--stack,16777216
                         -Wl,-Map=${CMAKE_BINARY_DIR}/SyphonFilterDarkMirror.map)
   endif()
 
@@ -265,7 +272,7 @@ if(SF_GAME_ISO)
   endif()
   target_include_directories(ca_psprun SYSTEM PRIVATE third_party/stb)
   if(MINGW)
-    target_link_options(ca_psprun PRIVATE -static-libgcc -static-libstdc++ -static -Wl,--stack,16777216)
+    target_link_options(ca_psprun PRIVATE ${SF_STATIC_RUNTIME} -static -Wl,--stack,16777216)
   endif()
 endif()
 
