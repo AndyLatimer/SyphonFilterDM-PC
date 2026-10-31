@@ -14,7 +14,7 @@ run="$root/build/run"; mkdir -p "$run"; cd "$run"
 fifo="$run/ctl.fifo"; rm -f "$fifo"; mkfifo "$fifo"
 default=$'shot play_0.png\nstick 0 128\nwait 2\nshot play_1_left.png\nrelease\nhold L\nwait 1\nshot play_2_l.png\nrelease'
 script=$( [ -n "$cmds" ] && cat "$cmds" || echo "$default" )
-total=$(awk 'tolower($1)=="wait"{s+=$2} END{print int(s)+215}' <<< "$script")
+total=$(awk 'tolower($1)=="wait"{s+=$2; next} NF{s+=0.3} END{print int(s)+220}' <<< "$script")
 P="--press CROSS@21 --press START@24 --press CROSS@28 --press DOWN@31 --press CROSS@32.5 --press CROSS@46 --press START@55 --press CROSS@57 --press CROSS@75"
 SDL_AUDIODRIVER=dummy timeout $((total + 90)) xvfb-run -a -s "-screen 0 1280x720x24" \
   "${CA_PSPRUN:-$root/build/linux/ca_psprun}" --iso "$root/game/SyphonFilterDarkMirror.iso" --gl \

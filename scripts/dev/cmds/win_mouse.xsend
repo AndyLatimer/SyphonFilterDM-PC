@@ -1,0 +1,224 @@
+wait 21
+key Return tap
+wait 3
+key Escape tap
+wait 4
+key Return tap
+wait 3
+key Down tap
+wait 1.5
+key Return tap
+wait 13.5
+key Return tap
+wait 9
+key Escape tap
+wait 2
+key Return tap
+wait 18
+key Return tap
+wait 120
+shot m0.png
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+move 8 0
+wait 0.02
+shot m1.png
+wait 1
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+move -8 0
+wait 0.02
+shot m2.png
+wait 1

@@ -123,6 +123,14 @@ struct FrontSettings {
     };
     std::map<std::string, WeaponAds> weaponAds; // lowercase name
     int mouseLookMode = 1;   // 0 off, 1 direct aim, 2 look buttons
+    // The game's control scheme the PC aim is mapped to (controls.ini [input] aim_scheme), until
+    // its camera is driven directly: 0 "standard" (Standard (Free Aim): the right stick and the
+    // mouse hold the look buttons, which the game turns smoothly with its own acceleration) or
+    // 1 "advanced" (Advanced (Free Aim), chosen in the game's Options > Controls: they push the
+    // PSP analog stick, the game's proportional free aim, and movement goes to the face buttons).
+    int aimScheme = 0;
+    float mouseHoldPerCount = 0.0035f; // standard: seconds of look-button hold per mouse count
+    float mouseAnalogGain = 0.035f;    // advanced: stick deflection per mouse count per frame
     float deadzoneRight = 0.15f, padCurve = 1.6f, padTurnRate = 3.0f; // rad/s at full deflection
     float padSensX = 1.0f, padSensY = 0.8f;
     bool padInvertX = false, padInvertY = false;
@@ -191,6 +199,9 @@ void loadSettings(FrontSettings& s, ca::Ini& ini, const std::string& dir) {
     s.walkSpeed = std::clamp(getF(ini, "input", "walk_speed", 0.7f), 0.35f, 1.0f);
     s.creepSpeed = std::clamp(getF(ini, "input", "creep_speed", 0.45f), 0.35f, 1.0f);
     s.mouseLookMode = (int)getF(ini, "input", "mouse_look", 1);
+    s.aimScheme = ini.get("input", "aim_scheme", "standard") == "advanced" ? 1 : 0;
+    s.mouseHoldPerCount = getF(ini, "input", "mouse_hold_per_count", s.mouseHoldPerCount);
+    s.mouseAnalogGain = getF(ini, "input", "mouse_analog_gain", s.mouseAnalogGain);
     s.mouseLook = s.mouseLookMode != 0;
     s.invertX = getF(ini, "input", "invert_x", 0) != 0;
     s.deadzoneRight = getF(ini, "input", "deadzone_right", 0.15f);
@@ -296,6 +307,9 @@ void saveSettings(const FrontSettings& s, ca::Ini& ini, const std::string& dir) 
     ini.set("input", "walk_speed", std::to_string(s.walkSpeed));
     ini.set("input", "creep_speed", std::to_string(s.creepSpeed));
     ini.set("input", "mouse_look", std::to_string(s.mouseLookMode));
+    ini.set("input", "aim_scheme", s.aimScheme ? "advanced" : "standard");
+    ini.set("input", "mouse_hold_per_count", std::to_string(s.mouseHoldPerCount));
+    ini.set("input", "mouse_analog_gain", std::to_string(s.mouseAnalogGain));
     auto fmt = [](float v) { char b[32]; std::snprintf(b, sizeof b, "%g", v); return std::string(b); };
     ini.set("ADS", "Enabled", s.adsEnabled ? "true" : "false");
     ini.set("ADS", "Mode", s.adsToggle ? "Toggle" : "Hold");
@@ -378,7 +392,9 @@ void applyAdsSettings(const FrontSettings& s) {
 struct InputState {
     SDL_GameController* pad = nullptr;
     float lookAccumX = 0, lookAccumY = 0;
-    float padLookPhaseX = 0, padLookPhaseY = 0; // right stick on the look buttons (duty cycle)
+    float mouseHoldX = 0, mouseHoldY = 0;   // standard scheme: signed look-button hold left (s)
+    float aimStickX = 0, aimStickY = 0;     // advanced scheme: PSP analog stick from the mouse
+    float padAimX = 0, padAimY = 0;         // advanced scheme: ... from the pad's right stick
     bool adsOn = false, adsWasHeld = false;
     // Scope weapons: the zoom wanted from the game's scope (-1: none pending), taps of its
     // button left, the end of the current tap and the earliest next one (SDL ticks).
@@ -517,22 +533,28 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
         float rx = SDL_GameControllerGetAxis(in.pad, SDL_CONTROLLER_AXIS_RIGHTX) / 32767.0f;
         float ry = SDL_GameControllerGetAxis(in.pad, SDL_CONTROLLER_AXIS_RIGHTY) / 32767.0f;
         ca::Vec2 r = ca::applyRadialDeadzone(rx, ry, s.deadzoneRight);
+        in.padAimX = in.padAimY = 0;
         float mag = std::sqrt(r.x * r.x + r.y * r.y);
         if (mag > 0 && !psp::host::g_directAim.load()) {
-            // No direct camera control for this game yet: the right stick presses the game's
-            // own look buttons for a share of the frames proportional to the deflection (after
-            // the response curve), so a light push turns slowly and a full one holds them.
-            float k = std::pow(mag, s.padCurve) / mag;
-            auto pulse = [&](float v, float& phase, const std::string& neg, const std::string& pos) {
-                phase += std::min(1.0f, std::fabs(v) * k);
-                if (phase >= 1.0f) {
-                    phase -= 1.0f;
+            const float vx = r.x * (s.padInvertX ? -1.0f : 1.0f), vy = r.y * (s.padInvertY ? -1.0f : 1.0f);
+            if (s.aimScheme == 1) {
+                // Advanced scheme: the PSP analog stick is the game's free aim. Its response only
+                // starts about half way, so the deflection is offset to turn from the first push.
+                float k = std::pow(mag, s.padCurve) / mag;
+                auto shape = [&](float v) { float a = std::min(1.0f, std::fabs(v) * k); return a > 0 ? std::copysign(0.5f + 0.5f * a, v) : 0.0f; };
+                in.padAimX = shape(vx);
+                in.padAimY = shape(vy);
+            } else {
+                // Standard scheme: hold the look buttons for as long as the stick is pushed (the game
+                // then turns smoothly, accelerating like a held button on the PSP).
+                auto hold = [&](float v, const std::string& neg, const std::string& pos) {
+                    if (std::fabs(v) < 0.3f) return;
                     int idx = inputIndex(v < 0 ? neg : pos);
                     if (idx >= 0) buttons |= kInputButtons[idx];
-                }
-            };
-            pulse(r.x * (s.padInvertX ? -1.0f : 1.0f), in.padLookPhaseX, s.lookLeft, s.lookRight);
-            pulse(r.y * (s.padInvertY ? -1.0f : 1.0f), in.padLookPhaseY, s.lookUp, s.lookDown);
+                };
+                hold(vx, s.lookLeft, s.lookRight);
+                hold(vy, s.lookUp, s.lookDown);
+            }
         } else if (mag > 0) {
             float k = std::pow(mag, s.padCurve) / mag;
             std::lock_guard<std::mutex> lk(psp::host::g_aim.m);
@@ -564,14 +586,34 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
             psp::host::g_aim.add(in.lookAccumX * kRadiansPerCount * lookScale, in.lookAccumY * kRadiansPerCount * lookScale);
         in.lookAccumX = in.lookAccumY = 0;
     } else if (mouseMode == 2 && focused && SDL_GetRelativeMouseMode()) {
-        auto press = [&](const std::string& n) { int k = inputIndex(n); if (k >= 0) buttons |= kInputButtons[k]; };
-        const float step = 6.0f;
-        if (in.lookAccumX <= -step) { press(s.lookLeft); in.lookAccumX += step; }
-        else if (in.lookAccumX >= step) { press(s.lookRight); in.lookAccumX -= step; }
-        else in.lookAccumX *= 0.8f;
-        if (in.lookAccumY <= -step) { press(s.lookUp); in.lookAccumY += step; }
-        else if (in.lookAccumY >= step) { press(s.lookDown); in.lookAccumY -= step; }
-        else in.lookAccumY *= 0.8f;
+        if (s.aimScheme == 1) {
+            // Advanced scheme: mouse speed -> analog stick deflection (rate control).
+            auto toStick = [&](float counts) {
+                return counts == 0 ? 0.0f : std::copysign(std::min(1.0f, 0.5f + std::fabs(counts) * s.mouseAnalogGain), counts);
+            };
+            const float mx = toStick(in.lookAccumX), my = toStick(in.lookAccumY);
+            in.aimStickX += (mx - in.aimStickX) * std::min(1.0f, dt * 30.0f);
+            in.aimStickY += (my - in.aimStickY) * std::min(1.0f, dt * 30.0f);
+        } else {
+            // Standard scheme: the mouse motion becomes a continuous hold of the look buttons
+            // (seconds per count, capped), so the game turns smoothly instead of in steps.
+            auto accumulate = [&](float counts, float& holdS) {
+                if (counts == 0) return;
+                if (holdS != 0 && (counts > 0) != (holdS > 0)) holdS = 0; // direction changed
+                holdS = std::clamp(holdS + counts * s.mouseHoldPerCount, -0.25f, 0.25f);
+            };
+            accumulate(in.lookAccumX, in.mouseHoldX);
+            accumulate(in.lookAccumY, in.mouseHoldY);
+            auto press = [&](float& holdS, const std::string& neg, const std::string& pos) {
+                if (holdS == 0) return;
+                int k = inputIndex(holdS < 0 ? neg : pos);
+                if (k >= 0) buttons |= kInputButtons[k];
+                holdS = holdS > 0 ? std::max(0.0f, holdS - dt) : std::min(0.0f, holdS + dt);
+            };
+            press(in.mouseHoldX, s.lookLeft, s.lookRight);
+            press(in.mouseHoldY, s.lookUp, s.lookDown);
+        }
+        in.lookAccumX = in.lookAccumY = 0;
     }
     in.wheelUp = in.wheelDown = false;
 
@@ -580,6 +622,17 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
     if (inputDebug && (buttons != psp::host::g_ctrl.buttons.load() || in.adsOn != lastAds))
         std::fprintf(stderr, "[INPUT] buttons %08x ads %d focused %d\n", buttons, (int)in.adsOn, (int)focused);
     lastAds = in.adsOn;
+    if (s.aimScheme == 1 && !psp::host::g_directAim.load()) {
+        // Advanced (Free Aim): triangle/cross/square/circle move forward/back/strafe left/right
+        // and the analog stick aims (the pad's right stick, or the mouse).
+        if (ay < -0.3f) buttons |= psp::host::BTN_TRIANGLE;
+        if (ay > 0.3f) buttons |= psp::host::BTN_CROSS;
+        if (ax < -0.3f) buttons |= psp::host::BTN_SQUARE;
+        if (ax > 0.3f) buttons |= psp::host::BTN_CIRCLE;
+        const bool padAiming = in.padAimX != 0 || in.padAimY != 0;
+        ax = padAiming ? in.padAimX : (std::fabs(in.aimStickX) < 0.05f ? 0.0f : in.aimStickX);
+        ay = padAiming ? in.padAimY : (std::fabs(in.aimStickY) < 0.05f ? 0.0f : in.aimStickY);
+    }
     psp::host::g_ctrl.buttons = buttons;
     psp::host::g_ctrl.lx = (uint8_t)std::clamp((int)std::lround(128 + ax * 127), 0, 255);
     psp::host::g_ctrl.ly = (uint8_t)std::clamp((int)std::lround(128 + ay * 127), 0, 255);

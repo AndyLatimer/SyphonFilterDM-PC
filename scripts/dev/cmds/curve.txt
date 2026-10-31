@@ -1,0 +1,141 @@
+press START 0.2
+wait 2
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.5
+press CROSS 0.2
+wait 2
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.8
+press CROSS 0.2
+wait 3
+shot adv_0_open.png
+press RIGHT 0.2
+wait 1.5
+shot adv_1_right.png
+press CROSS 0.2
+wait 2.5
+shot adv_2_confirm.png
+press TRIANGLE 0.2
+wait 1.5
+shot adv_3_back.png
+press START 0.2
+wait 2.5
+wait 0.5
+hold CROSS
+wait 1.5
+release
+wait 1.2
+shot curve_0.png
+stick 150 128
+wait 0.5
+memdump c0a.bin
+wait 0.6
+memdump c0b.bin
+stick 128 128
+wait 0.5
+stick 160 128
+wait 0.5
+memdump c1a.bin
+wait 0.6
+memdump c1b.bin
+stick 128 128
+wait 0.5
+stick 170 128
+wait 0.5
+memdump c2a.bin
+wait 0.6
+memdump c2b.bin
+stick 128 128
+wait 0.5
+stick 180 128
+wait 0.5
+memdump c3a.bin
+wait 0.6
+memdump c3b.bin
+stick 128 128
+wait 0.5
+stick 190 128
+wait 0.5
+memdump c4a.bin
+wait 0.6
+memdump c4b.bin
+stick 128 128
+wait 0.5
+stick 200 128
+wait 0.5
+memdump c5a.bin
+wait 0.6
+memdump c5b.bin
+stick 128 128
+wait 0.5
+stick 210 128
+wait 0.5
+memdump c6a.bin
+wait 0.6
+memdump c6b.bin
+stick 128 128
+wait 0.5
+stick 220 128
+wait 0.5
+memdump c7a.bin
+wait 0.6
+memdump c7b.bin
+stick 128 128
+wait 0.5
+stick 230 128
+wait 0.5
+memdump c8a.bin
+wait 0.6
+memdump c8b.bin
+stick 128 128
+wait 0.5
+stick 240 128
+wait 0.5
+memdump c9a.bin
+wait 0.6
+memdump c9b.bin
+stick 128 128
+wait 0.5
+stick 250 128
+wait 0.5
+memdump c10a.bin
+wait 0.6
+memdump c10b.bin
+stick 128 128
+wait 0.5
+stick 255 128
+wait 0.5
+memdump c11a.bin
+wait 0.6
+memdump c11b.bin
+stick 128 128
+wait 0.5
+stick 128 60
+wait 0.5
+memdump p0a.bin
+wait 0.6
+memdump p0b.bin
+stick 128 128
+wait 0.5
+stick 128 20
+wait 0.5
+memdump p1a.bin
+wait 0.6
+memdump p1b.bin
+stick 128 128
+wait 0.5
+stick 128 0
+wait 0.5
+memdump p2a.bin
+wait 0.6
+memdump p2b.bin
+stick 128 128
+wait 0.5

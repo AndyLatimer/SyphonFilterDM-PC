@@ -11,7 +11,7 @@ disp=:77
 Xvfb $disp -screen 0 1280x720x24 >/dev/null 2>&1 & xpid=$!
 sleep 1
 export DISPLAY=$disp SDL_AUDIODRIVER=dummy
-timeout "$secs" "$root/build/linux/SyphonFilterDarkMirror" --iso "$root/game/SyphonFilterDarkMirror.iso" --windowed > game.log 2>&1 & gpid=$!
+CA_INPUT_DEBUG=1 timeout "$secs" "$root/build/linux/SyphonFilterDarkMirror" --iso "$root/game/SyphonFilterDarkMirror.iso" --windowed > game.log 2>&1 & gpid=$!
 "$root/build/xsend" < "$script" || true
 kill $gpid 2>/dev/null || true; wait $gpid 2>/dev/null || true
 kill $xpid 2>/dev/null || true

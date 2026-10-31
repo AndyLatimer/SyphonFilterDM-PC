@@ -250,6 +250,27 @@ void controlThread(std::string path) {
                     std::fclose(o);
                 }
                 std::memset(g_prof_counts, 0, sizeof(uint32_t) * (0x400000 / 4));
+            } else if (c == "holdf") { // holdf ADDR VALUE|off: keep writing a float at ADDR (hex) every 2 ms
+                unsigned a = 0; char v[32] = {};
+                if (std::sscanf(l.c_str(), "%*s %x %31s", &a, v) == 2) {
+                    static std::mutex hm;
+                    static std::map<uint32_t, float> held;
+                    static bool started = false;
+                    std::lock_guard<std::mutex> lk(hm);
+                    if (!std::strcmp(v, "off")) held.erase(a); else held[a] = (float)std::atof(v);
+                    if (!started) {
+                        started = true;
+                        std::thread([] {
+                            for (;;) {
+                                {
+                                    std::lock_guard<std::mutex> lk2(hm);
+                                    for (auto& [ad, f] : held) { uint32_t w; std::memcpy(&w, &f, 4); psp::write32(ad, w); }
+                                }
+                                std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                            }
+                        }).detach();
+                    }
+                }
             } else if (c == "addf") { // addf ADDR DELTA: add to the float at ADDR (hex), e.g. to test a camera angle
                 unsigned a = 0; float d = 0;
                 if (std::sscanf(l.c_str(), "%*s %x %f", &a, &d) == 2) {

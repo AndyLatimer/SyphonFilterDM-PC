@@ -1,0 +1,35 @@
+stick 128 255
+wait 1.5
+release
+wait 1
+memdump h0.bin
+holdf 099b8f18 0
+holdf 099b8f20 0.25
+wait 0.5
+memdump h1a.bin
+shot h1a.png
+wait 0.6
+memdump h1b.bin
+holdf 099b8f20 off
+holdf 099b8f18 off
+wait 0.8
+holdf 099b8f18 0
+holdf 099b8f20 0.5
+wait 0.5
+memdump h2a.bin
+shot h2a.png
+wait 0.6
+memdump h2b.bin
+holdf 099b8f20 off
+holdf 099b8f18 off
+wait 0.8
+holdf 099b8f18 0
+holdf 099b8f20 1
+wait 0.5
+memdump h3a.bin
+shot h3a.png
+wait 0.6
+memdump h3b.bin
+holdf 099b8f20 off
+holdf 099b8f18 off
+wait 0.8

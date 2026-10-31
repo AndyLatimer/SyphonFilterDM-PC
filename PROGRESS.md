@@ -81,9 +81,18 @@ Gabe responde al stick (sale de la cobertura, gira, apunta); la pausa muestra la
   Options = pausa, Create/panel táctil = órdenes. Sin el gancho de cámara (`g_directAim`), ratón y
   stick derecho pulsan los botones de mirar (el stick con ciclo de trabajo proporcional).
 
+- [x] **Idioma**: `config.ini [game] language` (es por defecto; `auto` = el de Windows), `ca_psprun
+  --lang`. En español: avisos, título, menús, modo historia, briefing, objetivos en pantalla y el
+  paquete de voces del nivel (`UNFREED_S.HGZ`: `VOLEVEL_S.SKX`, `VONPC_S.SKX`).
+- [x] **Cámara sin tirones (provisional)**: ratón y stick derecho mantienen pulsados los botones de
+  mirar (antes los pulsaban a ráfagas): el juego gira con su aceleración (verificado con
+  `CA_INPUT_DEBUG`: una sola pulsación continua por dirección). `aim_scheme = advanced`: al stick
+  analógico del esquema Advanced (giro proporcional, ~150°/s a tope; medido en el radar).
+
 ## Parcialmente implementado / sin verificar
-- [ ] Cámara directa con ratón (sin pasar por botones): falta localizar la cámara del jugador
-  (compilación de vigilancia en curso; `REVERSE_ENGINEERING.md` §7).
+- [ ] Cámara directa con ratón (ángulo exacto por cuenta, sin aceleración del juego): la orientación
+  no es un ángulo guardado; ver `REVERSE_ENGINEERING.md` §7 (eje de apuntado 0x099b8f20, cuerpo
+  físico con amortiguación 0x09a379e0).
 - [ ] La mira ADS de Contagion está desactivada por defecto (no corresponde a este juego).
 - [ ] Descifrado real de un EBOOT.BIN `~PSP`: compila y rechaza contenedores inválidos; no hay
   vector de prueba real hasta tener un disco que lo necesite (puede que Dark Mirror no lo necesite).

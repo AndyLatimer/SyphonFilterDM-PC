@@ -17,7 +17,15 @@ Estado (ver PROGRESS.md)
 ------------------------
 - Probado en Linux: menus, perfil y guardado, videos, musica, primer nivel jugable.
 - Esta compilacion de Windows es la primera: aun no se ha ejecutado en Windows real.
-- La camara con raton pasa todavia por los botones de mirar del juego (no es directa).
+- Idioma: espanol (textos, subtitulos y voces). Se cambia en config.ini, [game] language =
+  es | en | fr | de | it | auto (auto = el idioma de Windows).
+- Camara: el raton y el stick derecho mantienen pulsados los botones de mirar del juego
+  mientras se mueven, asi que gira suave con la aceleracion del propio juego (no a saltos).
+  Opcion analogica (giro proporcional): elige "Advanced (Free Aim)" en Opciones > Controles
+  del juego y pon en controls.ini [input] aim_scheme = advanced (el movimiento pasa a los
+  botones X/circulo/cuadrado/triangulo de la PSP, que el port maneja con WASD / stick izq.).
+  Ajustes: mouse_hold_per_count (sensibilidad con aim_scheme = standard),
+  mouse_analog_gain (con advanced).
 
 Controles por defecto (controls.ini, seccion [bindings]; F1 abre los ajustes del PC)
 -------------------------------------------------------------------------------------

@@ -1,0 +1,61 @@
+press START 0.2
+wait 2
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.5
+press CROSS 0.2
+wait 2
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.8
+press CROSS 0.2
+wait 3
+shot adv_0_open.png
+press RIGHT 0.2
+wait 1.5
+shot adv_1_right.png
+press CROSS 0.2
+wait 2.5
+shot adv_2_confirm.png
+press TRIANGLE 0.2
+wait 1.5
+shot adv_3_back.png
+press START 0.2
+wait 2.5
+wait 0.5
+hold CROSS
+wait 1.5
+release
+wait 1.5
+shot lin_0.png
+memdump L0.bin
+wait 0.4
+memdump L1.bin
+stick 255 128
+wait 0.8
+memdump L2.bin
+wait 0.4
+memdump L3.bin
+wait 0.4
+memdump L4.bin
+wait 0.4
+memdump L5.bin
+stick 128 128
+wait 1.5
+memdump L6.bin
+wait 0.4
+memdump L7.bin
+stick 128 0
+wait 0.8
+memdump L8.bin
+wait 0.4
+memdump L9.bin
+stick 128 128
+wait 1.0
+shot lin_1.png

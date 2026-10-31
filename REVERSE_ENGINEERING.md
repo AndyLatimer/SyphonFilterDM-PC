@@ -80,3 +80,17 @@ Método: volcados de RAM de usuario (`ca_psprun` `memdump`) con ○/□/△ mant
 - Siguiente paso: vigilar quién escribe la matriz raíz de la pila (la vista de la cámara) y subir
   por `CA_WATCH_STACK` hasta el código de `cPlayerCamera` que la calcula a partir de sus ángulos;
   enganchar allí `g_aim` (como `ca_hook_player_turn` en Contagion) y poner `g_directAim = true`.
+
+### 7.1 Avances (2026-10-31)
+- En cobertura (inicio del nivel) el stick solo asoma a Gabe: las pruebas de cámara se hacen tras
+  separarlo de la pared.
+- **Eje de apuntado**: elemento de una tabla de acciones con temporizador (base 0x099b8ed0, +72
+  tiempo, +80 vector): 0x099b8f20 = +1 con ○ / stick a la derecha, −1 con □, 0 en reposo, en los
+  dos esquemas. Lo escribe la entrada al cambiar (0x08c4c5fc, 0x08d5ea24) y lo borra el
+  temporizador (0x08a7d028). Escribirlo desde fuera no gira la cámara: el consumidor toma el valor
+  por otra vía (mensaje).
+- **Inercia**: 0x09a37a20 es la velocidad de un cuerpo físico (0x09a379e0) amortiguada en
+  0x08d1a7ec (v *= max(0, 1 − k·dt)); integrador en 0x08d1a7c0.
+- La orientación de la cámara no aparece como ángulo en memoria (ni en grados ni en radianes):
+  probablemente una matriz girada por incrementos. El radar (0x08e9c8a4) la sigue linealmente.
+- Esquema Advanced: giro ≈150°/s con el stick a tope; respuesta casi nula por debajo de ~0,5.
