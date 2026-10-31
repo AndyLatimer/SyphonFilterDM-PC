@@ -1,16 +1,35 @@
 SYPHON FILTER: DARK MIRROR - PORT NATIVO PARA PC (version de desarrollo)
 =======================================================================
 
-Este paquete contiene el codigo de TU copia del juego recompilado para Windows x64.
-Es solo para tu uso personal: no lo distribuyas.
+Este paquete contiene el codigo de TU copia del juego (UCES-00310) recompilado para
+Windows x64. No es un emulador. Es solo para tu uso personal: no lo distribuyas.
 
 Instalacion
 -----------
 1. Copia tu ISO de Syphon Filter: Dark Mirror en la carpeta "game" con el nombre
-   SyphonFilterDarkMirror.iso.
-2. Ejecuta SyphonFilterDarkMirror.exe.
+   SyphonFilterDarkMirror.iso (o arranca con: SyphonFilterDarkMirror.exe --iso RUTA).
+2. Ejecuta SyphonFilterDarkMirror.exe (Windows 10/11 de 64 bits).
+   La primera vez crea config.ini, graphics.ini y controls.ini junto al ejecutable, y la
+   Memory Stick (partidas y perfiles) en la carpeta "memstick".
+   Registro de cada sesion: SyphonFilterDarkMirror.log (adjuntalo si algo falla).
 
-Estado
-------
-Fase inicial: el estado real esta en PROGRESS.md. El registro de cada ejecucion se guarda en
-SyphonFilterDarkMirror.log junto al ejecutable.
+Estado (ver PROGRESS.md)
+------------------------
+- Probado en Linux: menus, perfil y guardado, videos, musica, primer nivel jugable.
+- Esta compilacion de Windows es la primera: aun no se ha ejecutado en Windows real.
+- La camara con raton pasa todavia por los botones de mirar del juego (no es directa).
+
+Controles por defecto (controls.ini, seccion [bindings]; F1 abre los ajustes del PC)
+-------------------------------------------------------------------------------------
+Esquema "Standard (Free Aim)" del juego.
+  W A S D            moverse            Mayus          andar
+  Raton              mirar / apuntar    Clic izquierdo disparar (R)
+  Clic derecho / Alt apuntado manual, fijar blanco (L)   (dispara manteniendo ambos)
+  E / F              interactuar        Ctrl / C       agacharse
+  Q / rueda          cambiar arma       G              gadget
+  Tab                ordenes (SELECT)   Esc            pausa (START)
+  Intro / Espacio    aceptar (X)        Retroceso      volver (triangulo)
+  F10                liberar / capturar el raton    F11, Alt+Intro  pantalla completa
+DualSense / mando: stick izq. moverse, stick der. mirar, R2 disparar, L2 fijar blanco,
+botones = los de la PSP (X, circulo, cuadrado, triangulo), cruceta = la de la PSP,
+Options = pausa, Create / panel tactil = ordenes. Funciona por USB sin Steam.
