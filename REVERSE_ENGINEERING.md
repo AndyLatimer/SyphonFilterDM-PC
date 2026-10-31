@@ -105,3 +105,17 @@ Método: volcados de RAM de usuario (`ca_psprun` `memdump`) con ○/□/△ mant
 - Parche (`tools/recomp/games/UCES00310/patches.tsv`): en 0x08c227a4 `lw a1,484(s0)` →
   `ori a1,zero,60`. Tras él, en la prueba sin GPU hay ~1 espera por cambio de búfer (antes 2).
   El tope del PC sigue siendo `[video] frame_rate` (60 o 30).
+
+## 9. Candado del entrenamiento 1 (en curso)
+- El nivel es `SINGLE/TRAIN_1P/TRAIN_1` (el menú de entrenamiento abre el 1 con X; DERECHA pasa al 2).
+- El candado es el objeto `NI_REFB_Latch` de `TRAIN_1/FREED_L.HGZ` (definición en 0x75e0 del flujo
+  descomprimido): pieza `NI_REFB_Latch_lattchA.bpm` (textura `KEYHOLELATCH01.TDX`), puerta animada
+  `NI_doorA.bpm` y colisión `NI_doorcollA.bpm`; colocado en (71.79, −17.64, 5.44), giro 90.34°.
+  En RAM, tras cargar el nivel, hay instancias con esa traslación (p. ej. 0x09890130), así que el
+  objeto se crea. El guion del nivel tiene `train_1::EnableHotboxIfLocked`.
+- El jugador empieza en (5.6, −53.7, 3.37) (traslación de su matriz en `matdump`).
+- Herramientas: `scripts/dev/drive.py` (pruebas en Python que leen la RAM durante la partida),
+  `matdump` ahora anota direcciones de vértices y textura de cada dibujo, y F8 en el ejecutable
+  guarda la RAM y los dibujos del siguiente fotograma.
+- Siguiente paso: con una captura F8 delante de la puerta, ver si hay dibujos con traslación junto
+  al candado (si no los hay, el juego no lo manda dibujar: lógica; si los hay, es el renderizador).

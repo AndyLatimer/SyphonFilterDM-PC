@@ -1,0 +1,13 @@
+shot q0.png
+addf 090669f0 6
+addf 09066a90 6
+wait 1
+shot q1.png
+memdump qa.bin
+wait 1
+shot q2.png
+stick 128 0
+wait 0.5
+release
+wait 1
+shot q3.png

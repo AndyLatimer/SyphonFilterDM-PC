@@ -31,6 +31,7 @@
 #include "psp/host.h"
 #include "psp/host_dialog.h"
 #include "psp/kernel.h"
+#include "psp/memory.h"
 #include "render/GL.h"
 
 namespace psp::kernel {
@@ -1342,6 +1343,16 @@ int main(int argc, char** argv) {
                         std::fprintf(stderr, "[LUA] dev.lua queued (%zu bytes)\n", code.size());
                     } else {
                         std::fprintf(stderr, "[LUA] no dev.lua in %s\n", cfgDir.c_str());
+                    }
+                } else if (e.key.keysym.scancode == SDL_SCANCODE_F8 && !e.key.repeat) {
+                    // Debug capture for bug reports: every 3D draw of the next frame (matrices,
+                    // vertex/texture addresses) to the log and the game's RAM to ram_dump.bin.
+                    psp::gpu::dumpDrawMatrices(1);
+                    const std::string rp = cfgDir + "ram_dump.bin";
+                    if (FILE* o = std::fopen(rp.c_str(), "wb")) {
+                        std::fwrite(psp::hostPtr(0x08800000), 1, 0x01800000, o);
+                        std::fclose(o);
+                        std::fprintf(stderr, "[DEBUG] F8: RAM saved to %s, draws of the next frame follow as [MAT]\n", rp.c_str());
                     }
                 } else if (e.key.keysym.scancode == SDL_SCANCODE_F12 && !e.key.repeat) {
                     s_dumpThreads = true; // the guest threads' states to the log

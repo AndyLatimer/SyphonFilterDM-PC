@@ -1,0 +1,69 @@
+stick 128 0
+wait 1.4
+release
+hold UP
+wait 1.5
+release
+wait 1
+stick 128 0
+wait 0.6
+stick 255 128
+wait 1.2
+release
+hold UP
+wait 2.5
+release
+wait 1
+stick 255 128
+wait 4.2
+stick 128 0
+wait 1.8
+stick 255 128
+wait 0.5
+shot tl_0.png
+stick 255 128
+wait 0.5
+shot tl_1.png
+stick 255 128
+wait 0.5
+shot tl_2.png
+stick 255 128
+wait 0.5
+shot tl_3.png
+stick 255 128
+wait 0.5
+shot tl_4.png
+stick 255 128
+wait 0.5
+shot tl_5.png
+stick 255 128
+wait 0.5
+shot tl_6.png
+stick 255 128
+wait 0.5
+shot tl_7.png
+stick 255 128
+wait 0.5
+shot tl_8.png
+stick 255 128
+wait 0.5
+shot tl_9.png
+stick 255 128
+wait 0.5
+shot tl_10.png
+stick 255 128
+wait 0.5
+shot tl_11.png
+stick 255 128
+wait 0.5
+shot tl_12.png
+stick 255 128
+wait 0.5
+shot tl_13.png
+stick 255 128
+wait 0.5
+shot tl_14.png
+stick 255 128
+wait 0.5
+shot tl_15.png
+release

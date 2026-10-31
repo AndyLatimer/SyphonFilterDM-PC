@@ -12,6 +12,8 @@ Instalacion
    La primera vez crea config.ini, graphics.ini y controls.ini junto al ejecutable, y la
    Memory Stick (partidas y perfiles) en la carpeta "memstick".
    Registro de cada sesion: SyphonFilterDarkMirror.log (adjuntalo si algo falla).
+   F8 = captura de depuracion: guarda ram_dump.bin junto al ejecutable y anota en el registro
+   lo que se dibuja en el siguiente fotograma (para informar de objetos que no se ven).
 
 Estado (ver PROGRESS.md)
 ------------------------

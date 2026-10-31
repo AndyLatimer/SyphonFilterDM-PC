@@ -1,0 +1,1 @@
+--press CROSS@21 --press START@24 --press CROSS@28 --press CROSS@32.5 --press CROSS@40 --press CROSS@48 --press CROSS@56 --press CROSS@64

@@ -229,6 +229,7 @@ private:
     ClutState clut_;
     uint64_t clutHash_ = 0;
     uint32_t vaddr_ = 0, iaddr_ = 0;
+    uint32_t dbgVaddr_ = 0; // vertex address of the current draw (matrix dump)
     std::map<uint32_t, FboInfo> fbos_;
     int nextFboId_ = 1, nextTexId_ = 1;
     int boundFbo_ = 0;
@@ -1057,6 +1058,7 @@ void Recorder::drawPatch(uint32_t data, bool spline) {
         indices[i] = isz == 0 ? (uint32_t)i : (isz == 1 ? read8(a) : (isz == 2 ? read16(a) : read32(a)));
     }
     const uint32_t vbase = vaddr_;
+    dbgVaddr_ = vbase;
     if (isz) iaddr_ += (uint32_t)(count * isz);
     else vaddr_ += (uint32_t)(count * fmt.size);
     // The hardware draws nothing with fewer than 4 points along either direction.
@@ -1110,6 +1112,7 @@ void Recorder::draw(uint32_t data) {
         for (int i = 0; i < count; ++i) indices[i] = (uint32_t)i;
     }
     const uint32_t vbase = vaddr_;
+    dbgVaddr_ = vbase;
     if (isz) iaddr_ += (uint32_t)(count * isz);
     else vaddr_ += (uint32_t)(count * fmt.size);
     if (count == 0 || prim > PRIM_RECTANGLES) return;
@@ -1137,9 +1140,10 @@ void Recorder::emit(std::vector<Vertex>& vin, int prim, bool through, bool hasCo
             for (int r = 0; r < 3; ++r) e[r] = v[r] * w[0] + v[3 + r] * w[1] + v[6 + r] * w[2] + v[9 + r];
             for (int r = 0; r < 3; ++r) { lo[r] = std::min(lo[r], e[r]); hi[r] = std::max(hi[r], e[r]); }
         }
-        std::fprintf(stderr, "[MAT] n=%d prim=%d skin=%d tex=%d vp=%.0f,%.0f view=[%.3f %.3f %.3f|%.3f %.3f %.3f|%.3f %.3f %.3f|%.2f %.2f %.2f] "
+        std::fprintf(stderr, "[MAT] va=%08x ta=%08x vt=%06x n=%d prim=%d skin=%d tex=%d vp=%.0f,%.0f view=[%.3f %.3f %.3f|%.3f %.3f %.3f|%.3f %.3f %.3f|%.2f %.2f %.2f] "
                      "world.t=(%.2f %.2f %.2f) proj=[%.3f %.3f %.3f %.3f %.3f %.3f] eye x %.2f..%.2f y %.2f..%.2f z %.2f..%.2f\n",
-                     count, prim, (int)((reg(CMD_VERTEXTYPE) >> 14) & 7), (int)(reg(CMD_TEXTUREMAPENABLE) & 1),
+                     dbgVaddr_, (reg(CMD_TEXADDR0) & 0xFFFFF0) | ((reg(CMD_TEXBUFWIDTH0) << 8) & 0x0F000000),
+                     reg(CMD_VERTEXTYPE) & 0xFFFFFF, count, prim, (int)((reg(CMD_VERTEXTYPE) >> 14) & 7), (int)(reg(CMD_TEXTUREMAPENABLE) & 1),
                      float24(reg(CMD_VIEWPORTXSCALE)), float24(reg(CMD_VIEWPORTYSCALE)), v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7],
                      v[8], v[9], v[10], v[11], mtx_.world[9], mtx_.world[10], mtx_.world[11], mtx_.proj[0], mtx_.proj[5], mtx_.proj[8],
                      mtx_.proj[9], mtx_.proj[10], mtx_.proj[14], lo[0], hi[0], lo[1], hi[1], lo[2], hi[2]);

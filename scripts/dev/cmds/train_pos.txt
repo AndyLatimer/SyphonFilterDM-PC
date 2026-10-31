@@ -1,0 +1,16 @@
+shot p0.png
+memdump pa.bin
+wait 0.5
+memdump pa2.bin
+stick 128 0
+wait 1
+release
+wait 1
+memdump pb.bin
+shot p1.png
+stick 0 128
+wait 0.6
+release
+wait 1
+memdump pc.bin
+shot p2.png
