@@ -268,6 +268,10 @@ private:
             // Display-sized buffers get extra width for wide screens (Hor+).
             if (g_settings.wideAspect > 0 && f.w == 480 && f.h == 272)
                 f.extra = std::max(0, (int)std::lround((272.0 * g_settings.wideAspect - 480.0) / 2.0));
+            // 480x272 is already ~16:9: on 16:9 / 16:10 screens the widening is a couple of pixels
+            // that only misplaces HUD parts (Dark Mirror's ammo counter). Widen only when it shows
+            // a real amount more (ultrawide screens).
+            if (f.extra < 16) f.extra = 0;
             it = fbos_.emplace(key, f).first;
         }
         FboInfo& f = it->second;

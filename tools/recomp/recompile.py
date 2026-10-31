@@ -49,6 +49,19 @@ def report_unknown(mod, funcs):
             print("  %08x-%08x: %d unknown words%s" % (f.start, f.end, n, " (address taken)" if f.indirect else ""))
 
 
+def load_patches(game):
+    """games/<disc id>/patches.tsv: address, original word, new word (hex) - instruction changes
+    of the port, applied before recompiling only when the original word matches."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "games", game, "patches.tsv")
+    out = []
+    if os.path.exists(path):
+        for line in open(path):
+            line = line.split("#", 1)[0].split()
+            if len(line) >= 3:
+                out.append(tuple(int(x, 16) for x in line[:3]))
+    return out
+
+
 def load_data_ranges(game):
     """games/<disc id>/data.tsv: start, end (exclusive) of data blocks inside BOOT.BIN's .text
     that the function discovery must not take for code (their addresses are taken by the
@@ -95,6 +108,13 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     codegen.write_if_changed(os.path.join(args.out, "game_id.txt"), codegen.GAME_ID + "\n")
     mod = PspModule(data)
+    for addr, old, new in load_patches(codegen.GAME_ID):
+        cur = mod.word(addr - mod.base)
+        if cur != old:
+            print("patch %08x: expected %08x, found %08x (other version?) - not applied" % (addr, old, cur))
+            continue
+        mod.set_word(addr - mod.base, new)
+        print("patch %08x: %08x -> %08x" % (addr, old, new))
     mod.data_ranges = load_data_ranges(codegen.GAME_ID)
     for d0, d1 in mod.data_ranges:
         print("data in .text (not recompiled): %08x-%08x" % (d0, d1))

@@ -512,6 +512,9 @@ static void hleStats(const std::string& name, uint32_t ra) {
     static std::mutex m;
     static std::map<std::pair<std::string, uint32_t>, int> counts;
     static uint64_t last = 0;
+    // CA_HLE_ONLY=substring: count only the imports whose name contains it.
+    static const char* only = std::getenv("CA_HLE_ONLY");
+    if (only && name.find(only) == std::string::npos) return;
     std::lock_guard<std::mutex> lk(m);
     counts[{name, ra}]++;
     uint64_t now = nowUs();
