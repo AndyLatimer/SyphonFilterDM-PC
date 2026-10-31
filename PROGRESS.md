@@ -88,8 +88,11 @@ Gabe responde al stick (sale de la cobertura, gira, apunta); la pausa muestra la
 - [ ] Descifrado real de un EBOOT.BIN `~PSP`: compila y rechaza contenedores inválidos; no hay
   vector de prueba real hasta tener un disco que lo necesite (puede que Dark Mirror no lo necesite).
 - [ ] Módulos descifrados comprimidos (gzip): detectados y rechazados con mensaje; sin inflado.
-- [ ] Compilación de Windows: no hay MinGW en este entorno (sin acceso a apt/pip/npm ni a las
-  descargas de GitHub); `scripts/build_windows.sh` es el de Contagion, adaptado, sin ejecutar aquí.
+- [x] **Compilación de Windows x64** (2026-10-31): cadena llvm-mingw montada sobre el Clang 18 del
+  sistema (`BUILD.md`), SDL2 2.30.9 para Windows (HIDAPI/XInput/OpenGL), `SyphonFilterDarkMirror.exe`
+  (GUI, pila de 16 MB) y `ca_psprun.exe`; dependencias: solo `SDL2.dll` y DLL del sistema (UCRT de
+  Windows 10/11). Paquete `dist/SyphonFilterDarkMirror-win64.zip` (no se sube).
+- [ ] El .exe aún no se ha ejecutado en Windows real (no hay Wine en el entorno).
 - [ ] Controles de PC: el front end es el de Contagion (FPS). Sin ganchos, el ratón no mueve la
   cámara; teclado y mando se traducen a botones/stick de PSP.
 
