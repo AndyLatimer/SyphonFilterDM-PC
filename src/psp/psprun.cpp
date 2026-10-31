@@ -250,6 +250,8 @@ void controlThread(std::string path) {
                     std::fclose(o);
                 }
                 std::memset(g_prof_counts, 0, sizeof(uint32_t) * (0x400000 / 4));
+            } else if (c == "vblank") { // vblank N: run the vblank N times faster (1 = 59.94 Hz)
+                psp::host::g_vblankScale = std::max(1, std::atoi(arg));
             } else if (c == "holdf") { // holdf ADDR VALUE|off: keep writing a float at ADDR (hex) every 2 ms
                 unsigned a = 0; char v[32] = {};
                 if (std::sscanf(l.c_str(), "%*s %x %31s", &a, v) == 2) {

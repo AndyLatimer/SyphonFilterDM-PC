@@ -1,0 +1,20 @@
+stick 128 255
+wait 1.5
+release
+wait 1
+hold CIRCLE
+wait 0.5
+memdump v0.bin
+wait 1.0
+memdump v1.bin
+release
+wait 2
+vblank 2
+wait 2
+hold CIRCLE
+wait 0.5
+memdump v2.bin
+wait 1.0
+memdump v3.bin
+release
+wait 2

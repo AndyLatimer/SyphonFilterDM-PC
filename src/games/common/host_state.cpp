@@ -18,4 +18,5 @@ std::atomic<int> g_selectSlot{0};
 GameOptions g_gameOptions;
 std::atomic<int> g_targetFps{0};
 std::atomic<bool> g_directAim{false};
+std::atomic<int> g_vblankScale{1};
 }

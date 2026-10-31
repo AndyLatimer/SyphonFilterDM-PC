@@ -26,15 +26,18 @@ namespace psp::kernel {
 
 namespace {
 
-constexpr double kVblankUs = 1001000000.0 / 60000.0; // 59.94 Hz
-uint64_t vcount() { return (uint64_t)(nowUs() / kVblankUs); }
+// The display's vertical blank, 59.94 Hz on the PSP. host::g_vblankScale > 1 runs the vblank the
+// game waits for that many times faster: Dark Mirror draws a frame every second vblank (30 fps)
+// with a time-based logic, so a 2x vblank gives 60 fps at the same game speed.
+double vblankUs() { return 1001000000.0 / 60000.0 / std::max(1, host::g_vblankScale.load()); }
+uint64_t vcount() { return (uint64_t)(nowUs() / vblankUs()); }
 void waitVblank(bool cb) {
     if (cb) runPendingCallbacks();
     // Contagion updates once per vblank wait with a frame-time based logic: 60 fps at most.
     // A 30 fps cap (host::g_targetFps) waits for every other vblank instead.
     uint64_t target = vcount() + 1;
     if (host::g_targetFps.load() == 30) target += target & 1;
-    uint64_t next = (uint64_t)std::ceil((double)target * kVblankUs) + 1;
+    uint64_t next = (uint64_t)std::ceil((double)target * vblankUs()) + 1;
     uint64_t now = nowUs();
     delayCurrentThread(next > now ? next - now : 1, cb);
     if (cb) runPendingCallbacks();

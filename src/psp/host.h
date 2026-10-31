@@ -170,5 +170,7 @@ extern std::atomic<int> g_targetFps;
 // Without them (src/games/generic) the front end maps the mouse and the right stick onto the
 // game's own look buttons instead.
 extern std::atomic<bool> g_directAim;
+// Vblank rate multiplier (hle_devices.cpp): 1 = the PSP's 59.94 Hz, 2 = 119.88 Hz.
+extern std::atomic<int> g_vblankScale;
 
 } // namespace psp::host

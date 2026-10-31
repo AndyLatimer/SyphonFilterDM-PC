@@ -352,6 +352,7 @@ void queueGuestCall(uint32_t addr, uint32_t a0, uint32_t a1, uint32_t a2) {
 void registerSubIntr(int intno, int subno, uint32_t handler, uint32_t arg) {
     std::lock_guard<std::mutex> lk(g_km);
     g_subIntrs[{intno, subno}] = {handler, arg, false};
+    log("sub-interrupt %d/%d handler %08x arg %08x", intno, subno, handler, arg);
 }
 void enableSubIntr(int intno, int subno, bool enable) {
     std::lock_guard<std::mutex> lk(g_km);
