@@ -1,4 +1,5 @@
 stick 128 255
 wait 1.5
 release
-wait 4
+wait 6
+shot async.png

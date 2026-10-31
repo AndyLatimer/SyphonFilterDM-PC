@@ -140,7 +140,10 @@ void registerDeviceHle() {
         g_display.pixelFormat = A(c, 2);
         g_display.frameCount++;
         ret(c, 0);
-        if (gpu::installed() && A(c, 0)) gpu::setDisplay(A(c, 0), A(c, 1), A(c, 2));
+        if (gpu::installed() && A(c, 0)) {
+            ge::waitIdle(); // the frame's lists are drawn before it is shown (GE thread)
+            gpu::setDisplay(A(c, 0), A(c, 1), A(c, 2));
+        }
     });
     registerHle("sceDisplayGetVcount", [](Ctx* c) { ret(c, (uint32_t)vcount()); });
     registerHle("sceDisplayWaitVblankStart", [](Ctx* c) { waitVblank(false); ret(c, 0); });

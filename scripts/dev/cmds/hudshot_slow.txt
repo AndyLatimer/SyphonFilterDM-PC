@@ -1,0 +1,6 @@
+wait 150
+stick 128 255
+wait 1.5
+release
+wait 3
+shot hud.png

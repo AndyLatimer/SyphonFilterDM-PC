@@ -1091,6 +1091,8 @@ int main(int argc, char** argv) {
     // Hor+: the PSP's 480x272 is ~16:9; wider windows see more to the sides (set at start-up).
     if (s.widescreen && dw > 0 && dh > 0 && (float)dw / dh > 480.0f / 272.0f + 0.01f) gs.wideAspect = (float)dw / dh;
     psp::gpu::install(gs);
+    std::fprintf(stderr, "[video] window %dx%d, render scale %d (setting %d), wide aspect %.4f (widescreen %d), vsync %d, frame_rate %d\n",
+                 dw, dh, gs.scale, s.renderScale, gs.wideAspect, s.widescreen, (int)s.vsync, s.frameRate);
     if (s.pcButtonHints) installButtonLabels(s);
     psp::host::g_targetFps = s.frameRate == 30 ? 30 : 60;
     psp::host::g_dev.enabled = s.dev;

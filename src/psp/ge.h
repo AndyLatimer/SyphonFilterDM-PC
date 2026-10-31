@@ -39,5 +39,7 @@ bool listDone(int id);
 bool allDone();
 int setCallback(uint32_t signalFunc, uint32_t signalArg, uint32_t finishFunc, uint32_t finishArg);
 void unsetCallback(int cbid);
+// Waits until the GE thread has processed everything submitted (before a display flip).
+void waitIdle();
 
 } // namespace psp::ge

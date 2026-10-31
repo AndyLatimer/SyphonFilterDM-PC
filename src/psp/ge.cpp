@@ -1,6 +1,11 @@
 #include "psp/ge.h"
 
+#include <atomic>
+#include <condition_variable>
+#include <cstdlib>
+#include <deque>
 #include <map>
+#include <thread>
 
 #include "psp/kernel.h"
 #include "psp/memory.h"
@@ -81,6 +86,55 @@ void run(List& l) {
 
 } // namespace
 
+// ---- asynchronous processing ----------------------------------------------------------------
+// On the PSP the GE walks display lists in parallel with the CPU. Running them on the calling
+// guest thread (CA_GE_SYNC=1) adds all the translation work to the game's frame; by default a
+// GE thread processes them, in submission order, and the sync calls wait for it.
+std::mutex g_qm;
+std::condition_variable g_qcv, g_idleCv2;
+std::deque<int> g_queue;      // list ids with work (new list, or a moved stall address)
+std::atomic<int> g_busy{0};   // the GE thread is running a list
+bool g_threadStarted = false;
+bool asyncMode() { static const bool sync = std::getenv("CA_GE_SYNC") != nullptr; return !sync; }
+
+void geThread() {
+    for (;;) {
+        int id;
+        {
+            std::unique_lock<std::mutex> lk(g_qm);
+            g_qcv.wait(lk, [] { return !g_queue.empty(); });
+            id = g_queue.front();
+            g_queue.pop_front();
+            g_busy = 1;
+        }
+        {
+            std::lock_guard<std::recursive_mutex> lk(g_mutex);
+            auto it = g_lists.find(id);
+            if (it != g_lists.end() && !it->second.done) run(it->second);
+        }
+        {
+            std::lock_guard<std::mutex> lk(g_qm);
+            g_busy = 0;
+            g_idleCv2.notify_all();
+        }
+        kernel::notifyStateChanged();
+    }
+}
+
+void submit(int id) {
+    std::lock_guard<std::mutex> lk(g_qm);
+    if (!g_threadStarted) { g_threadStarted = true; std::thread(geThread).detach(); }
+    g_queue.push_back(id);
+    g_qcv.notify_one();
+}
+
+
+void waitIdle() {
+    if (!asyncMode()) return;
+    std::unique_lock<std::mutex> lk(g_qm);
+    g_idleCv2.wait(lk, [] { return g_queue.empty() && !g_busy; });
+}
+
 void setRenderer(Renderer* r) {
     std::lock_guard<std::recursive_mutex> lk(g_mutex);
     g_renderer = r;
@@ -90,24 +144,30 @@ uint32_t reg(int cmd) { return g_regs[cmd & 0xFF]; }
 
 int enqueue(uint32_t list, uint32_t stall, int cbid, bool head) {
     (void)head;
-    std::lock_guard<std::recursive_mutex> lk(g_mutex);
-    List l;
-    l.id = g_nextList++;
-    l.start = l.pc = list & 0x0FFFFFFF;
-    l.stall = stall & 0x0FFFFFFF;
-    l.cbid = cbid;
-    auto& ref = g_lists[l.id] = l;
-    run(ref);
-    // Forget finished lists, keeping the id answerable by listDone().
-    return l.id;
+    int id;
+    {
+        std::lock_guard<std::recursive_mutex> lk(g_mutex);
+        List l;
+        l.id = id = g_nextList++;
+        l.start = l.pc = list & 0x0FFFFFFF;
+        l.stall = stall & 0x0FFFFFFF;
+        l.cbid = cbid;
+        auto& ref = g_lists[l.id] = l;
+        if (!asyncMode()) { run(ref); return id; }
+    }
+    submit(id);
+    return id;
 }
 
 int updateStall(int id, uint32_t stall) {
-    std::lock_guard<std::recursive_mutex> lk(g_mutex);
-    auto it = g_lists.find(id);
-    if (it == g_lists.end()) return -1;
-    it->second.stall = stall & 0x0FFFFFFF;
-    run(it->second);
+    {
+        std::lock_guard<std::recursive_mutex> lk(g_mutex);
+        auto it = g_lists.find(id);
+        if (it == g_lists.end()) return -1;
+        it->second.stall = stall & 0x0FFFFFFF;
+        if (!asyncMode()) { run(it->second); return 0; }
+    }
+    submit(id);
     return 0;
 }
 
@@ -118,6 +178,10 @@ bool listDone(int id) {
 }
 
 bool allDone() {
+    if (asyncMode()) {
+        std::lock_guard<std::mutex> lk(g_qm);
+        if (!g_queue.empty() || g_busy) return false;
+    }
     std::lock_guard<std::recursive_mutex> lk(g_mutex);
     for (auto it = g_lists.begin(); it != g_lists.end();) {
         if (!it->second.done) return false;
