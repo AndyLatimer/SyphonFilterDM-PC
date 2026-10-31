@@ -1,0 +1,41 @@
+press START 0.2
+wait 2
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.5
+press CROSS 0.2
+wait 2
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.8
+press CROSS 0.2
+wait 3
+shot adv_0_open.png
+press RIGHT 0.2
+wait 1.5
+shot adv_1_right.png
+press CROSS 0.2
+wait 2.5
+shot adv_2_confirm.png
+press TRIANGLE 0.2
+wait 1.5
+shot adv_3_back.png
+press START 0.2
+wait 2.5
+memdump a0.bin
+stick 170 128
+wait 1
+memdump a1.bin
+shot adv_4_slow.png
+stick 255 128
+wait 1
+memdump a2.bin
+shot adv_5_fast.png
+stick 128 128
+wait 0.5

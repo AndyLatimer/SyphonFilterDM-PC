@@ -81,6 +81,7 @@ const char* kDefaultBindings[IN_COUNT] = {
 
 struct FrontSettings {
     std::string iso;
+    std::string language = "es"; // the PSP system language: es, en, fr, de, it, or auto (the PC's)
     int width = 1280, height = 720;
     int fullscreen = 0;     // 0 windowed, 1 borderless desktop, 2 exclusive
     bool vsync = true;
@@ -167,6 +168,7 @@ bool getB(const ca::Ini& ini, const char* s, const char* k, bool d) {
 void loadSettings(FrontSettings& s, ca::Ini& ini, const std::string& dir) {
     for (const char* f : kConfigFiles) ini.load(dir + f);
     s.iso = ini.get("game", "iso", s.iso);
+    s.language = ini.get("game", "language", s.language);
     s.width = (int)getF(ini, "video", "width", (float)s.width);
     s.height = (int)getF(ini, "video", "height", (float)s.height);
     s.fullscreen = (int)getF(ini, "video", "fullscreen", (float)s.fullscreen);
@@ -271,6 +273,7 @@ void loadSettings(FrontSettings& s, ca::Ini& ini, const std::string& dir) {
 
 void saveSettings(const FrontSettings& s, ca::Ini& ini, const std::string& dir) {
     ini.set("game", "iso", s.iso);
+    ini.set("game", "language", s.language);
     ini.set("video", "width", std::to_string(s.width));
     ini.set("video", "height", std::to_string(s.height));
     ini.set("video", "fullscreen", std::to_string(s.fullscreen));
@@ -1086,6 +1089,19 @@ int main(int argc, char** argv) {
 
     psp::kernel::BootOptions opt;
     opt.isoPath = iso;
+    // Game language (text and voices): config.ini [game] language, or the PC's preferred language.
+    {
+        int lang = psp::kernel::parseSystemLanguage(s.language);
+        if (lang < 0) {
+            if (SDL_Locale* locs = SDL_GetPreferredLocales()) {
+                for (SDL_Locale* l = locs; l->language && lang < 0; ++l) lang = psp::kernel::parseSystemLanguage(l->language);
+                SDL_free(locs);
+            }
+        }
+        if (lang < 0) lang = 1; // English
+        psp::kernel::setSystemLanguage(lang);
+        std::fprintf(stderr, "[game] language %d (setting '%s')\n", lang, s.language.c_str());
+    }
     // The system dialogs (load/save, messages) read the controller like on the PSP and are
     // drawn by the overlay below.
     psp::host::setDialogUsesController(true);

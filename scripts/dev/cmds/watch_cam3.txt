@@ -1,0 +1,8 @@
+stick 128 255
+wait 1.5
+release
+wait 1
+hold CIRCLE
+wait 0.3
+release
+wait 0.5

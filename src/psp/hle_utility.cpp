@@ -1,3 +1,5 @@
+#include <cctype>
+#include <cstring>
 // sceUtility: the savedata and message dialogs, ported from PPSSPP's Core/HLE/sceUtility.cpp
 // (GPL-2.0-or-later). The dialogs themselves are PPSSPP's PSPSaveDialog/PSPMsgDialog/SavedataParam
 // (src/psp/ppsspp/), which show their screens through src/psp/host_dialog.h instead of PPGe.
@@ -246,6 +248,26 @@ void UtilityDialogShutdown(UtilityDialogType type, int delayUs, int accessPriori
 }
 
 namespace psp::kernel {
+
+// The PSP's system language (sceUtilityGetSystemParamInt LANGUAGE): games pick their text and
+// voices from it (Dark Mirror: STRINGS_<l>.DAT and the levels' *_<l>.HOG/HGZ for E/F/G/I/S).
+void setSystemLanguage(int pspLanguage) {
+    if (pspLanguage >= 0 && pspLanguage <= 11) g_Config.iLanguage = pspLanguage;
+}
+
+// "es", "spanish", "espanol", "es_ES", "3"... -> PSP language code; -1 if unknown.
+int parseSystemLanguage(const std::string& name) {
+    std::string n;
+    for (char ch : name) n += (char)std::tolower((unsigned char)ch);
+    if (!n.empty() && std::isdigit((unsigned char)n[0])) { int v = std::atoi(n.c_str()); return v >= 0 && v <= 11 ? v : -1; }
+    n = n.substr(0, n.find_first_of("_-.@ ")); // "es_ES.UTF-8" -> "es"
+    static const std::pair<const char*, int> kNames[] = {
+        {"ja", 0}, {"japanese", 0}, {"en", 1}, {"english", 1}, {"fr", 2}, {"french", 2}, {"es", 3}, {"spanish", 3},
+        {"espanol", 3}, {"de", 4}, {"german", 4}, {"it", 5}, {"italian", 5}, {"nl", 6}, {"dutch", 6},
+        {"pt", 7}, {"portuguese", 7}, {"ru", 8}, {"russian", 8}, {"ko", 9}, {"korean", 9}, {"zh", 11}, {"chinese", 11}};
+    for (const auto& [k, v] : kNames) if (n == k) return v;
+    return -1;
+}
 
 void registerUtilityHle() {
     // Simulated memory stick size. PPSSPP defaults to 16 GB, but Coded Arms computes free space

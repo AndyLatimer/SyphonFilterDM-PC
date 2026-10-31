@@ -68,6 +68,9 @@ void dumpThreads();
 // PSP wait types (SceKernelThreadInfo.waitType), for the thread that waits next.
 enum : uint32_t { kWaitSleep = 1, kWaitDelay = 2, kWaitSema = 3, kWaitEventFlag = 4, kWaitThreadEnd = 9, kWaitVblank = 12 };
 void setNextWait(uint32_t type, uint32_t id);
+// The PSP system language games read (hle_utility.cpp): 0 ja, 1 en, 2 fr, 3 es, 4 de, 5 it, ...
+void setSystemLanguage(int pspLanguage);
+int parseSystemLanguage(const std::string& name); // "es", "spanish", "es_ES"... ; -1 if unknown
 bool waitUntil(const std::function<bool()>& ready, uint64_t timeoutUs, bool processCallbacks = false);
 // Media Engine job queue (hle_sas.cpp): microseconds until a job of `us` queued now finishes.
 uint64_t meScheduleJob(uint64_t us);

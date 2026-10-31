@@ -1,6 +1,6 @@
 // ca_psprun: headless runner for the recompiled game (development tool).
 //   ca_psprun --iso SyphonFilterDarkMirror.iso [--trace] [--seconds N] [--wav out.wav]
-//             [--press BUTTON@SECONDS[:HOLD]]... [--memstick DIR] [--gl [--scale N] [--shot SECONDS:FILE.png]...]
+//             [--lang es|en|fr|de|it] [--press BUTTON@SECONDS[:HOLD]]... [--memstick DIR] [--gl [--scale N] [--shot SECONDS:FILE.png]...]
 // --gl renders the GE output with OpenGL in a hidden window (works under Xvfb) and --shot
 // saves the presented frame at the given times (for comparison with reference frames).
 // --memstick (or CA_MEMSTICK) is the host folder mapped to ms0:/ (default ./memstick).
@@ -411,6 +411,11 @@ int main(int argc, char** argv) {
     std::vector<std::pair<double, std::string>> shots;
     for (int i = 1; i < argc; ++i) {
         if (!std::strcmp(argv[i], "--iso") && i + 1 < argc) opt.isoPath = argv[++i];
+        else if (!std::strcmp(argv[i], "--lang") && i + 1 < argc) { // system language: es, en, fr, de, it...
+            const int l = psp::kernel::parseSystemLanguage(argv[++i]);
+            if (l < 0) { std::fprintf(stderr, "unknown language %s\n", argv[i]); return 2; }
+            psp::kernel::setSystemLanguage(l);
+        }
         else if (!std::strcmp(argv[i], "--trace")) opt.traceHle = true;
         else if (!std::strcmp(argv[i], "--seconds") && i + 1 < argc) seconds = std::atoi(argv[++i]);
         else if (!std::strcmp(argv[i], "--gl")) gl = true;
