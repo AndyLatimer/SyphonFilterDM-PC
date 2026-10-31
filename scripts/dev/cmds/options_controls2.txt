@@ -1,0 +1,26 @@
+press START 0.2
+wait 2
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.5
+press CROSS 0.2
+wait 2
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.8
+shot ctl_0.png
+press CROSS 0.2
+wait 2
+shot ctl_1.png
+press DOWN 0.15
+wait 0.8
+shot ctl_2.png
+press RIGHT 0.15
+wait 0.8
+shot ctl_3.png

@@ -1,0 +1,10 @@
+wait 20
+shot w20.png
+key Return tap
+wait 3
+key Return tap
+wait 4
+shot w27.png
+key Return tap
+wait 3
+shot w30.png

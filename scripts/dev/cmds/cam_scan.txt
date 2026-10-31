@@ -1,0 +1,28 @@
+stick 255 128
+wait 1.2
+release
+wait 1
+memdump m0.bin
+wait 0.5
+memdump m1.bin
+hold CIRCLE
+wait 0.6
+release
+wait 0.5
+memdump m2.bin
+hold CIRCLE
+wait 0.6
+release
+wait 0.5
+memdump m3.bin
+hold SQUARE
+wait 1.5
+release
+wait 0.5
+memdump m4.bin
+hold TRIANGLE
+wait 0.6
+release
+wait 0.5
+memdump m5.bin
+shot cam_end.png

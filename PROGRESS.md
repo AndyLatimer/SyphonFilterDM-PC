@@ -61,10 +61,30 @@ Gabe responde al stick (sale de la cobertura, gira, apunta); la pausa muestra la
   stick, retícula de apuntado, menú de pausa (Briefing/Inventory/Options/Restart/Quit con los
   objetivos de la misión). Sin llamadas al sistema sin implementar.
 
+- [x] Esquema de controles del juego (Options > Controls, capturado): Standard (Free Aim): stick =
+  mover; △○×□ = apuntar arriba/derecha/abajo/izquierda; R = disparar; L = apuntado manual / fijar
+  blanco; ↑ arma, → interactuar/zoom+, ← gadget, ↓ agacharse/zoom−; SELECT órdenes; START pausa.
+  Advanced (Free Aim) intercambia stick y botones frontales.
+- [x] Disparo: con el blanco fijado (L) y R mantenido baja la munición (12 → 11) y hay fogonazo.
+- [x] Audio (`--wav`, 220 s): música de menús, vídeo y nivel con niveles normales, sin cortes.
+- [x] `cpu_diff` completo: 142 347 palabras, 9,1 M pruebas; solo difiere `sqrt.s` (signo del NaN,
+  2 palabras, heredado). `sc` corregido en el arnés (siempre tiene éxito: no hay cambio de hilo
+  entre `ll` y `sc` en el código recompilado).
+- [x] **Ejecutable con ventana `SyphonFilterDarkMirror` (Linux) jugado con teclado y ratón reales**
+  en Xvfb (`scripts/dev/windowed_test.sh`, eventos X con `tools/xinput/xsend.c`): 1280×720
+  panorámico Hor+ sin estirar, Intro/Esc en menús, WASD mueve a Gabe, el ratón gira y sube la
+  cámara (a través de los botones de mirar), clic derecho = L, Esc = pausa.
+- [x] Controles por defecto del front end según el esquema Standard (ver `src/frontend/Main.cpp`):
+  WASD mover, ratón mirar, clic izq. disparar (R), clic der./Alt fijar blanco (L), E/F interactuar,
+  Ctrl/C agacharse, Q/rueda arma, G gadget, Tab órdenes, Esc pausa, Intro/Espacio aceptar,
+  Retroceso volver, Mayús andar. Mando: sticks, gatillos R2/L2, botones = los de la PSP, cruceta,
+  Options = pausa, Create/panel táctil = órdenes. Sin el gancho de cámara (`g_directAim`), ratón y
+  stick derecho pulsan los botones de mirar (el stick con ciclo de trabajo proporcional).
+
 ## Parcialmente implementado / sin verificar
-- [ ] Disparo: R pulsado 0,3 s no cambió la munición (12/24); falta comprobar el esquema real de
-  controles del juego (y si R solo dispara con un blanco o mantenido).
-- [ ] Audio: no comprobado aún en este juego (`--wav`).
+- [ ] Cámara directa con ratón (sin pasar por botones): falta localizar la cámara del jugador
+  (compilación de vigilancia en curso; `REVERSE_ENGINEERING.md` §7).
+- [ ] La mira ADS de Contagion está desactivada por defecto (no corresponde a este juego).
 - [ ] Descifrado real de un EBOOT.BIN `~PSP`: compila y rechaza contenedores inválidos; no hay
   vector de prueba real hasta tener un disco que lo necesite (puede que Dark Mirror no lo necesite).
 - [ ] Módulos descifrados comprimidos (gzip): detectados y rechazados con mensaje; sin inflado.
@@ -90,8 +110,9 @@ del módulo), cadenas y rutas de `src/frontend/`, `src/core/Config.cpp`, `src/ps
 `scripts/`. Movidos a `docs/cac/`: notas, progreso, ganchos y tablas de Contagion.
 
 ## Siguiente tarea concreta
-1. Esquema de controles original (menú Options del juego) y disparo; audio con `--wav`.
-2. Ejecutable con ventana y entrada de PC (`SyphonFilterDarkMirror`): mapeo teclado/mando a la PSP.
+1. Cámara directa: con `build/watch` (`-DCA_RECOMP_WATCH=ON`) encontrar quién escribe el ángulo de
+   la cámara del jugador y engancharlo como en Contagion (`g_directAim = true`).
+2. Compilación de Windows en un equipo con MinGW (`scripts/build_windows.sh`).
 2. `cpu_diff` completo (tarda >15 min con 2 núcleos: lanzarlo en segundo plano).
 3. Probar el ejecutable con ventana (`SyphonFilterDarkMirror`) y la compilación de Windows.
 

@@ -1,0 +1,17 @@
+stick 255 128
+wait 1.2
+release
+wait 0.5
+shot f2_0_out.png
+press R 0.15
+wait 0.6
+press R 0.15
+wait 0.6
+shot f2_1_fire.png
+hold L
+wait 1
+shot f2_2_l.png
+press R 0.15
+wait 0.6
+shot f2_3_lfire.png
+release

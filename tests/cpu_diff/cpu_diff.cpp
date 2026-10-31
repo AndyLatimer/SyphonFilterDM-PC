@@ -96,6 +96,10 @@ int main(int argc, char** argv) {
             std::memcpy(b.r, a.r, sizeof(a.r));
             std::memcpy(b.fi, a.fi, sizeof(a.fi));
             b.hi = a.hi; b.lo = a.lo; b.fcr31 = a.fcr31; b.fpcond = a.fpcond; b.space = &space;
+            // ll/sc: the recompiled code has no thread switch between an ll and its sc (switches
+            // happen only at system calls and backward-jump polls), so sc always succeeds, as on
+            // the PSP when nothing interrupts the sequence. Compare against that case.
+            b.llBit = 1;
 
             t.fn(&a);
             std::memcpy(after, psp::hostPtr(kArea), kAreaSize);

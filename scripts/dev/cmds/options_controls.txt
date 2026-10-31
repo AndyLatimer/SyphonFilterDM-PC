@@ -1,0 +1,19 @@
+press START 0.2
+wait 2
+press DOWN 0.15
+wait 0.5
+press DOWN 0.15
+wait 0.5
+shot opt_0_pause.png
+press CROSS 0.2
+wait 2
+shot opt_1_options.png
+press CROSS 0.2
+wait 2
+shot opt_2_sub.png
+press DOWN 0.15
+wait 0.6
+shot opt_3_down.png
+press DOWN 0.15
+wait 0.6
+shot opt_4_down.png

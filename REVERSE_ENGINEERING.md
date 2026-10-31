@@ -65,3 +65,8 @@ Estructura: `GAMEDATA/SINGLE/<MISIÓN>_1P/<SUBNIVEL>/` (822 MB, campaña), `MULT
 ## 6. Lo heredado que hay que revisar con este juego
 `src/psp/gpu/button_glyphs.cpp` (repinta símbolos de botones al reconocer texturas de Contagion),
 `minimap.cpp` y `ads.cpp` (inactivos sin ganchos). Comprobar que no se disparan en Dark Mirror.
+
+## 7. Cámara del jugador (en curso)
+- Volcados de memoria girando con ○/□/△ (`ca_psprun` `memdump`, `scripts/dev/cmds/cam_scan2.txt`):
+  en `.bss` 0x08e9c870–0x08e9c8a8 hay una matriz 2×2 de giro y dos ángulos en grados que cambian
+  con ○/□ pero no con △: parece el radar, no la cámara. Pendiente con la compilación de vigilancia.

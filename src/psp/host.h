@@ -166,5 +166,9 @@ extern GameOptions g_gameOptions;
 // Frame rate cap: 30, or 60 / 0 for the game's own maximum (60, one update per vblank; its
 // logic follows the frame time, so the game's speed does not change). hle_devices.cpp.
 extern std::atomic<int> g_targetFps;
+// Set by a game's hooks when they drive its camera directly from g_aim (mouse / right stick).
+// Without them (src/games/generic) the front end maps the mouse and the right stick onto the
+// game's own look buttons instead.
+extern std::atomic<bool> g_directAim;
 
 } // namespace psp::host

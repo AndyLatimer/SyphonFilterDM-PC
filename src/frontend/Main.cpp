@@ -56,18 +56,28 @@ const uint32_t kInputButtons[12] = {
     psp::host::BTN_UP, psp::host::BTN_DOWN, psp::host::BTN_LEFT, psp::host::BTN_RIGHT, psp::host::BTN_CROSS,
     psp::host::BTN_CIRCLE, psp::host::BTN_SQUARE, psp::host::BTN_TRIANGLE, psp::host::BTN_LTRIGGER,
     psp::host::BTN_RTRIGGER, psp::host::BTN_START, psp::host::BTN_SELECT};
-// Defaults follow the game's control scheme A (its default, Settings > Controls): analog = move
-// and strafe, triangle/cross/square/circle = look up/down/left/right (the mouse and the right
-// stick aim directly instead, game_hooks.cpp), up = toggle scope, down = toggle lock-on, left =
-// change weapon, right = reload, L = jump, R = fire, select = toggle visor, start = pause. In the
-// menus cross confirms and triangle goes back (circle in the system dialogs, so Backspace is
-// both). The right mouse button / left trigger aim down sights.
+// Defaults follow Syphon Filter: Dark Mirror's "Standard (Free Aim)" scheme (its Options >
+// Controls screen): analog = movement/strafe, triangle/circle/cross/square = aim up/right/down/
+// left, R = fire, L = manual aim / target lock, up = weapon select, right = interact / zoom in,
+// left = gadget select, down = crouch / zoom out, select = command, start = pause. In the menus
+// cross confirms and triangle goes back. The mouse and the right stick aim through the look
+// buttons until the game's camera is driven directly (psp::host::g_directAim).
 const char* kDefaultBindings[IN_COUNT] = {
-    "key:Up, mouse:middle, key:Z, pad:dpup", "key:Down, key:Q, pad:dpdown",
-    "key:Left, mouse:wheelup, mouse:wheeldown, key:C, pad:dpleft", "key:Right, key:R, pad:dpright",
-    "key:Return, pad:a", "key:Backspace, pad:b", "pad:x", "key:Backspace, pad:y", "key:Space, pad:leftshoulder",
-    "mouse:left, pad:rightshoulder, pad:righttrigger", "key:Escape, key:P, pad:start", "key:Tab, key:V, pad:back",
-    "key:W", "key:S", "key:A", "key:D", "mouse:right, pad:lefttrigger", "key:Left Shift", "key:Left Ctrl"};
+    "key:Q, key:Up, mouse:wheelup, mouse:wheeldown, pad:dpup",       // up: weapon select
+    "key:Left Ctrl, key:C, key:Down, pad:dpdown",                    // down: crouch / zoom out
+    "key:G, key:Left, pad:dpleft",                                   // left: gadget select
+    "key:E, key:F, key:Right, pad:dpright",                          // right: interact / zoom in
+    "key:Return, key:Space, pad:a",                                  // cross: confirm / aim down
+    "pad:b",                                                         // circle: aim right
+    "pad:x",                                                         // square: aim left
+    "key:Backspace, pad:y",                                          // triangle: back / aim up
+    "mouse:right, key:Left Alt, pad:lefttrigger, pad:leftshoulder",  // L: manual aim / target lock
+    "mouse:left, pad:righttrigger, pad:rightshoulder",               // R: fire
+    "key:Escape, key:P, pad:start",                                  // start: pause
+    "key:Tab, pad:back, pad:touchpad",                               // select: command
+    "key:W", "key:S", "key:A", "key:D",                              // stick
+    "",                                                              // aim down sights (Contagion only)
+    "key:Left Shift", ""};                                           // walk, creep
 
 struct FrontSettings {
     std::string iso;
@@ -96,7 +106,7 @@ struct FrontSettings {
     std::string lookUp = "triangle", lookDown = "cross", lookLeft = "square", lookRight = "circle";
     bool mouseLook = true;
     // Aim down sights (controls.ini [ADS]); fields of view in degrees, horizontal at 480x272.
-    bool adsEnabled = true;
+    bool adsEnabled = false; // Contagion's first-person ADS: not for this game
     bool adsToggle = false;  // Mode = Hold (false) or Toggle (true)
     float adsTransition = 0.18f;
     float normalFov = 85.0f, adsFov = 65.0f;
@@ -190,7 +200,7 @@ void loadSettings(FrontSettings& s, ca::Ini& ini, const std::string& dir) {
     s.padInvertY = getF(ini, "input", "pad_invert_y", 0) != 0;
     s.mouseSensX = getF(ini, "input", "mouse_sens_x", 1.0f);
     s.mouseSensY = getF(ini, "input", "mouse_sens_y", 1.0f);
-    s.adsEnabled = getB(ini, "ADS", "Enabled", true);
+    s.adsEnabled = getB(ini, "ADS", "Enabled", false);
     {
         std::string mode = ini.get("ADS", "Mode", "Hold");
         for (char& c : mode) c = (char)std::tolower((unsigned char)c);
@@ -365,6 +375,7 @@ void applyAdsSettings(const FrontSettings& s) {
 struct InputState {
     SDL_GameController* pad = nullptr;
     float lookAccumX = 0, lookAccumY = 0;
+    float padLookPhaseX = 0, padLookPhaseY = 0; // right stick on the look buttons (duty cycle)
     bool adsOn = false, adsWasHeld = false;
     // Scope weapons: the zoom wanted from the game's scope (-1: none pending), taps of its
     // button left, the end of the current tap and the earliest next one (SDL ticks).
@@ -504,7 +515,22 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
         float ry = SDL_GameControllerGetAxis(in.pad, SDL_CONTROLLER_AXIS_RIGHTY) / 32767.0f;
         ca::Vec2 r = ca::applyRadialDeadzone(rx, ry, s.deadzoneRight);
         float mag = std::sqrt(r.x * r.x + r.y * r.y);
-        if (mag > 0) {
+        if (mag > 0 && !psp::host::g_directAim.load()) {
+            // No direct camera control for this game yet: the right stick presses the game's
+            // own look buttons for a share of the frames proportional to the deflection (after
+            // the response curve), so a light push turns slowly and a full one holds them.
+            float k = std::pow(mag, s.padCurve) / mag;
+            auto pulse = [&](float v, float& phase, const std::string& neg, const std::string& pos) {
+                phase += std::min(1.0f, std::fabs(v) * k);
+                if (phase >= 1.0f) {
+                    phase -= 1.0f;
+                    int idx = inputIndex(v < 0 ? neg : pos);
+                    if (idx >= 0) buttons |= kInputButtons[idx];
+                }
+            };
+            pulse(r.x * (s.padInvertX ? -1.0f : 1.0f), in.padLookPhaseX, s.lookLeft, s.lookRight);
+            pulse(r.y * (s.padInvertY ? -1.0f : 1.0f), in.padLookPhaseY, s.lookUp, s.lookDown);
+        } else if (mag > 0) {
             float k = std::pow(mag, s.padCurve) / mag;
             std::lock_guard<std::mutex> lk(psp::host::g_aim.m);
             psp::host::g_aim.add(r.x * k * s.padTurnRate * s.padSensX * lookScale * dt * (s.padInvertX ? -1.0f : 1.0f),
@@ -526,12 +552,15 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
 
     // Mouse: direct aim (default) adds the motion to the game's view angles (game_hooks.cpp);
     // mouse_look = 2 instead spends it as presses of the look buttons like the original pad.
-    if (s.mouseLookMode == 1 && focused && SDL_GetRelativeMouseMode()) {
+    // Direct aim needs the game's hooks (psp::host::g_directAim); without them the mouse
+    // falls back to the look buttons.
+    const int mouseMode = s.mouseLookMode == 1 && !psp::host::g_directAim.load() ? 2 : s.mouseLookMode;
+    if (mouseMode == 1 && focused && SDL_GetRelativeMouseMode()) {
         std::lock_guard<std::mutex> lk(psp::host::g_aim.m);
         if (in.lookAccumX != 0 || in.lookAccumY != 0)
             psp::host::g_aim.add(in.lookAccumX * kRadiansPerCount * lookScale, in.lookAccumY * kRadiansPerCount * lookScale);
         in.lookAccumX = in.lookAccumY = 0;
-    } else if (s.mouseLookMode == 2 && focused && SDL_GetRelativeMouseMode()) {
+    } else if (mouseMode == 2 && focused && SDL_GetRelativeMouseMode()) {
         auto press = [&](const std::string& n) { int k = inputIndex(n); if (k >= 0) buttons |= kInputButtons[k]; };
         const float step = 6.0f;
         if (in.lookAccumX <= -step) { press(s.lookLeft); in.lookAccumX += step; }

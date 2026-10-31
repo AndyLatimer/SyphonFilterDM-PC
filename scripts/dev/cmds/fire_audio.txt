@@ -1,0 +1,18 @@
+shot fire_0.png
+hold R
+wait 1.5
+shot fire_1_hold.png
+release
+wait 0.5
+press R 0.1
+wait 0.4
+press R 0.1
+wait 0.4
+press R 0.1
+wait 1
+shot fire_2_taps.png
+press TRIANGLE 0.5
+wait 0.5
+press CIRCLE 0.8
+wait 1
+shot fire_3_look.png

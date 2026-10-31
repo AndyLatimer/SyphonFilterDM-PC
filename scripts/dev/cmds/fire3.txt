@@ -1,0 +1,22 @@
+stick 255 128
+wait 1.2
+release
+wait 30
+hold L
+wait 1
+shot f3_0_lock.png
+hold L+R
+wait 3
+shot f3_1_hold.png
+hold L
+wait 0.3
+hold L+R
+wait 0.3
+hold L
+wait 0.3
+hold L+R
+wait 0.3
+hold L
+wait 0.5
+shot f3_2_taps.png
+release
