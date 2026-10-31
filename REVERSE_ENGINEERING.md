@@ -94,3 +94,14 @@ Método: volcados de RAM de usuario (`ca_psprun` `memdump`) con ○/□/△ mant
 - La orientación de la cámara no aparece como ángulo en memoria (ni en grados ni en radianes):
   probablemente una matriz girada por incrementos. El radar (0x08e9c8a4) la sigue linealmente.
 - Esquema Advanced: giro ≈150°/s con el stick a tope; respuesta casi nula por debajo de ~0,5.
+
+## 8. Bucle de fotogramas y límite de 30 fps
+- Limitador en 0x08c2275c: calcula 1e6 / (tiempo del fotograma en µs) y espera un vblank mientras
+  supere el objetivo guardado en objeto+484 (60 al arrancar, **30 en los niveles**). Por eso el
+  juego se quedaba en 30 fps aunque cada fotograma costara ~4 ms (60 esperas por 30 cambios de
+  búfer en `CA_PERF`). La volteada real es 0x08c1ca90 (SetFrameBuf); objeto+472 cuenta fotogramas.
+- La lógica usa el tiempo medido del fotograma (redondeado a 1/60 s, 0x08c20914), así que el ritmo
+  del juego no depende de los fps.
+- Parche (`tools/recomp/games/UCES00310/patches.tsv`): en 0x08c227a4 `lw a1,484(s0)` →
+  `ori a1,zero,60`. Tras él, en la prueba sin GPU hay ~1 espera por cambio de búfer (antes 2).
+  El tope del PC sigue siendo `[video] frame_rate` (60 o 30).
