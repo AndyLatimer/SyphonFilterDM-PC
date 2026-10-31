@@ -26,5 +26,6 @@ void endFrame(); // the frame was presented
 // world distance from the centre to the edge. Returns false when there is nothing to show.
 bool render(std::vector<uint32_t>& rgba, int size, float range);
 void setEnabled(bool on);
+bool enabled(); // cheap check before preparing a draw for addDraw
 
 } // namespace psp::gpu::minimap

@@ -189,6 +189,7 @@ uint64_t hashFloats(const float* f, int n) {
 } // namespace
 
 void setEnabled(bool on) { g_enabled = on; }
+bool enabled() { return g_enabled.load(std::memory_order_relaxed); }
 
 void addDraw(uint64_t key, std::shared_ptr<const std::vector<Vertex>> verts, int prim, const float world[12],
              const float view[12], bool skinned) {

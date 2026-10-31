@@ -449,6 +449,8 @@ private:
     // nearly every patch is the same every frame.
     std::unordered_map<uint64_t, std::shared_ptr<const TessResult>> patchCache_;
     void emit(std::vector<Vertex>& vin, int prim, bool through, bool hasColor);
+    std::vector<uint32_t> drawIndices_; // draw(): buffers reused between draws
+    std::vector<Vertex> drawVerts_;
     void transfer(uint32_t data);
     void buildUbo(Ubo& u, const FboInfo& f, bool through, bool hasColor);
     void buildState(GlState& st, const FboInfo& f, bool through, int prim);
@@ -1095,7 +1097,9 @@ void Recorder::draw(uint32_t data) {
     const int prim = (data >> 16) & 7;
     VertexFormat fmt;
     fmt.set(reg(CMD_VERTEXTYPE));
-    std::vector<uint32_t> indices((size_t)count);
+    // Reused between draws (the GE thread draws thousands per frame).
+    std::vector<uint32_t>& indices = drawIndices_;
+    indices.resize((size_t)count);
     const int isz = fmt.indexSize();
     if (isz) {
         for (int i = 0; i < count; ++i) {
@@ -1111,9 +1115,10 @@ void Recorder::draw(uint32_t data) {
     if (count == 0 || prim > PRIM_RECTANGLES) return;
 
     dctx_.mtx = &mtx_;
-    std::vector<Vertex> vin((size_t)count);
+    std::vector<Vertex>& vin = drawVerts_;
+    vin.resize((size_t)count);
     for (int i = 0; i < count; ++i) decodeVertex(fmt, dctx_, vbase, indices[i], vin[i]);
-    if (!fmt.through && prim >= PRIM_TRIANGLES && prim <= PRIM_TRIANGLE_FAN) {
+    if (minimap::enabled() && !fmt.through && prim >= PRIM_TRIANGLES && prim <= PRIM_TRIANGLE_FAN) {
         uint64_t key = hashBytes(reinterpret_cast<const uint8_t*>(vin.data()), vin.size() * sizeof(Vertex));
         minimap::addDraw(key, std::make_shared<const std::vector<Vertex>>(vin), prim, mtx_.world, mtx_.view, fmt.weight != 0);
     }
@@ -1279,8 +1284,14 @@ void Recorder::emit(std::vector<Vertex>& vin, int prim, bool through, bool hasCo
         const float* p = &v.pos[0];
         frame_->verts.insert(frame_->verts.end(), p, p + kFloatsPerVertex);
     }
-    op.ubo = frame_->ubos.size();
-    frame_->ubos.push_back(ubo);
+    // Consecutive draws often share every uniform: reuse the previous block (the render thread
+    // then skips the upload too).
+    if (!frame_->ubos.empty() && std::memcmp(&frame_->ubos.back(), &ubo, sizeof(Ubo)) == 0) {
+        op.ubo = frame_->ubos.size() - 1;
+    } else {
+        op.ubo = frame_->ubos.size();
+        frame_->ubos.push_back(ubo);
+    }
     frame_->ops.push_back(op);
 }
 
@@ -1495,6 +1506,8 @@ void execFrame(Frame& fr, PresentInfo& pinfo, bool& presented) {
     g_exec.bound = -1;
     g_exec.target = -1;
     int drawIndex = 0;
+    size_t lastUbo = SIZE_MAX;            // the uniform block in the buffer (deduplicated draws)
+    const Frame* lastUboFrame = nullptr;
     for (Op& op : fr.ops) {
         if (op.type == OP_DRAW && g_maxDraws >= 0 && drawIndex++ >= g_maxDraws) continue;
         if (op.type == OP_DRAW && g_skipFbTex && op.st.texKind == 2) continue;
@@ -1590,7 +1603,11 @@ void execFrame(Frame& fr, PresentInfo& pinfo, bool& presented) {
                 if (op.st.texKind == 1) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, op.st.maxLevel);
             }
             glBindBuffer(GL_UNIFORM_BUFFER, g_exec.ubo);
-            glBufferData(GL_UNIFORM_BUFFER, sizeof(Ubo), &fr.ubos[op.ubo], GL_STREAM_DRAW);
+            if (op.ubo != lastUbo || &fr != lastUboFrame) {
+                glBufferData(GL_UNIFORM_BUFFER, sizeof(Ubo), &fr.ubos[op.ubo], GL_STREAM_DRAW);
+                lastUbo = op.ubo;
+                lastUboFrame = &fr;
+            }
             glDrawArrays(op.glMode, (GLint)op.first, (GLsizei)op.count);
             break;
         }
