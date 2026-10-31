@@ -17,7 +17,7 @@ script=$( [ -n "$cmds" ] && cat "$cmds" || echo "$default" )
 total=$(awk 'tolower($1)=="wait"{s+=$2} END{print int(s)+215}' <<< "$script")
 P="--press CROSS@21 --press START@24 --press CROSS@28 --press DOWN@31 --press CROSS@32.5 --press CROSS@46 --press START@55 --press CROSS@57 --press CROSS@75"
 SDL_AUDIODRIVER=dummy timeout $((total + 90)) xvfb-run -a -s "-screen 0 1280x720x24" \
-  "$root/build/linux/ca_psprun" --iso "$root/game/SyphonFilterDarkMirror.iso" --gl \
+  "${CA_PSPRUN:-$root/build/linux/ca_psprun}" --iso "$root/game/SyphonFilterDarkMirror.iso" --gl \
   --seconds "$total" --control "$fifo" $P "$@" > play.log 2>&1 &
 pid=$!
 {

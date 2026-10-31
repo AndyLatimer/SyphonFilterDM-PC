@@ -67,6 +67,16 @@ Estructura: `GAMEDATA/SINGLE/<MISIÓN>_1P/<SUBNIVEL>/` (822 MB, campaña), `MULT
 `minimap.cpp` y `ads.cpp` (inactivos sin ganchos). Comprobar que no se disparan en Dark Mirror.
 
 ## 7. Cámara del jugador (en curso)
-- Volcados de memoria girando con ○/□/△ (`ca_psprun` `memdump`, `scripts/dev/cmds/cam_scan2.txt`):
-  en `.bss` 0x08e9c870–0x08e9c8a8 hay una matriz 2×2 de giro y dos ángulos en grados que cambian
-  con ○/□ pero no con △: parece el radar, no la cámara. Pendiente con la compilación de vigilancia.
+Método: volcados de RAM de usuario (`ca_psprun` `memdump`) con ○/□/△ mantenidos
+(`scripts/dev/cmds/cam_scan3.txt`), compilación de vigilancia (`build/watch`, `CA_WATCH_ADDR`,
+`CA_WATCH_STACK`), `addf ADDR DELTA` en el FIFO de `ca_psprun`, `tools/recomp/disasm.py`.
+- **La cámara tiene inercia**: tras soltar ○ los ángulos siguen girando unos 0,3 s.
+- **Pila de matrices** del motor: objeto en 0x08e8d450, índice en +0x1080, matrices de 64 bytes en
+  +0xC80; push en 0x08b86140 (copia la cima) y multiplicación en 0x08b86098. 0x08e8e280 (y su
+  copia 0x09fbf140) es la traslación de una de sus matrices: derivado, no el ángulo.
+- 0x08e9c870–0x08e9c8a8 (`.bss`): matriz 2×2 de giro y dos ángulos en grados (0x08e9c8a0/a4) que
+  giran con ○/□ y no con △; escritos desde 0x08c19af4/0x08c19b30 y 0x08901f30. Probable radar/HUD.
+- 0x08ec2660–0x08ec26ff: planos del frustum de la vista (derivados).
+- Siguiente paso: vigilar quién escribe la matriz raíz de la pila (la vista de la cámara) y subir
+  por `CA_WATCH_STACK` hasta el código de `cPlayerCamera` que la calcula a partir de sus ángulos;
+  enganchar allí `g_aim` (como `ca_hook_player_turn` en Contagion) y poner `g_directAim = true`.

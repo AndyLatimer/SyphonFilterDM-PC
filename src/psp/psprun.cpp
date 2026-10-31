@@ -250,6 +250,12 @@ void controlThread(std::string path) {
                     std::fclose(o);
                 }
                 std::memset(g_prof_counts, 0, sizeof(uint32_t) * (0x400000 / 4));
+            } else if (c == "addf") { // addf ADDR DELTA: add to the float at ADDR (hex), e.g. to test a camera angle
+                unsigned a = 0; float d = 0;
+                if (std::sscanf(l.c_str(), "%*s %x %f", &a, &d) == 2) {
+                    uint32_t v = psp::read32(a); float f; std::memcpy(&f, &v, 4); f += d; std::memcpy(&v, &f, 4); psp::write32(a, v);
+                    std::fprintf(stderr, "[CTL] addf %08x -> %f\n", a, f);
+                }
             } else if (c == "poke8") { // poke8 ADDR VALUE (hex address)
                 unsigned a = 0, v = 0;
                 if (std::sscanf(l.c_str(), "%*s %x %u", &a, &v) == 2) psp::write8(a, (uint8_t)v);

@@ -269,7 +269,8 @@ extern "C" void rt_watch_store(Ctx* c, uint32_t pc, uint32_t addr) {
                 std::fprintf(stderr, "        stack:");
                 for (uint32_t o = 0; o < 0x400; o += 4) {
                     uint32_t v = psp::read32(c->r[29] + o);
-                    if (v >= 0x08804000 && v < 0x08b80000 && !(v & 3)) std::fprintf(stderr, " +%x:%08x", o, v);
+                    // BOOT.BIN .text: 0x08804000-0x08b80000 in Contagion, -0x08dba590 in Dark Mirror.
+                    if (v >= 0x08804000 && v < 0x08dbb000 && !(v & 3)) std::fprintf(stderr, " +%x:%08x", o, v);
                 }
                 std::fprintf(stderr, "\n");
             }
