@@ -1,0 +1,32 @@
+wait 21
+key Return tap
+wait 3
+key Escape tap
+wait 4
+key Return tap
+wait 4.5
+key Return tap
+wait 7.5
+key Return tap
+wait 8
+key Return tap
+wait 8
+key Return tap
+wait 8
+key Return tap
+wait 70
+shot c0.png
+key w down
+wait 1.0
+key w up
+wait 1.5
+shot c1.png
+key v tap
+wait 3
+shot c2.png
+key BackSpace tap
+wait 2
+shot c3.png
+key Tab tap
+wait 4
+shot c4.png

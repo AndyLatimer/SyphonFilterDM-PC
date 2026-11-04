@@ -131,6 +131,8 @@ Método: volcados de RAM de usuario (`ca_psprun` `memdump`) con ○/□/△ mant
   también el HUD ortográfico y lo separaba del contador de munición; y el panorámico (Hor+)
   enseñaba marcos que el juego deja fuera de x 0..480 (las "flechas" de los bordes). El
   renderizador ya no aplica ninguna de las dos cosas a proyecciones ortográficas.
-- Cobertura: el gesto del juego (soltar el stick junto a la superficie y volver a empujar) pega
-  a Gabe a cajas y contenedores; el botón de cubrirse del port lo hace: 0,35 s hacia delante,
-  0,3 s suelto y 0,5 s hacia delante (probado parando antes de la caja).
+- Cobertura: el juego solo pega a Gabe si el empujón empieza cuando ya toca la superficie (tras
+  soltar el stick). Si se para un poco antes, el empujón lo lleva hasta ella y no cuenta. El botón
+  de cubrirse repite empujar 0,6 s / soltar 0,6 s tres veces; probado en el ejecutable de PC
+  (`scripts/dev/windowed_test.sh scripts/dev/cmds/win_cover3.xsend`) parando antes de la caja.
+- El stick del PC ahora llega a 0 y 255 a fondo (antes 1..255: 128 ± 127).

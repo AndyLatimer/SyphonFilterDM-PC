@@ -659,7 +659,7 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
         ay = padAiming ? in.padAimY : (std::fabs(in.aimStickY) < 0.05f ? 0.0f : in.aimStickY);
     }
     // Snap to cover: the game snaps when the stick, let go next to a wall, is pushed into it.
-    // The cover button does that gesture: 0.35 s pushed, 0.3 s at rest, then 0.5 s pushed the way Gabe was
+    // The cover button does that gesture (pushes of 0.6 s with 0.6 s at rest) the way Gabe was
     // last moved (forward if he was standing).
     {
         static bool coverWasHeld = false;
@@ -669,20 +669,36 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
         } else if (!in.coverStartUs) {
             in.coverX = 0; in.coverY = -1;
         }
-        if (held[IN_COVER] && !coverWasHeld) in.coverStartUs = nowUs;
+        if (held[IN_COVER] && !coverWasHeld) {
+            in.coverStartUs = nowUs;
+            if (inputDebug) std::fprintf(stderr, "[INPUT] cover gesture, push %.2f %.2f\n", in.coverX, in.coverY);
+        }
         coverWasHeld = held[IN_COVER];
         if (in.coverStartUs) {
             const uint64_t t = nowUs - in.coverStartUs;
-            // Walk up to the wall first (if Gabe stopped short of it), let go, then push.
-            if (t < 350000) { ax = in.coverX; ay = in.coverY; }
-            else if (t < 650000) { ax = ay = 0; }
-            else if (t < 1150000) { ax = in.coverX; ay = in.coverY; }
-            else in.coverStartUs = 0;
+            // The game only snaps on a push that starts while Gabe already touches the surface,
+            // so walk up, let go and push again, three times (he may have stopped short of it).
+            // Once snapped, the extra pushes only peek over the cover and back.
+            if (t < 3000000) {
+                const bool push = (t / 600000) % 2 == 0;
+                ax = push ? in.coverX : 0.0f;
+                ay = push ? in.coverY : 0.0f;
+            } else {
+                in.coverStartUs = 0;
+            }
         }
     }
+    if (inputDebug) {
+        static int lastLx = -1, lastLy = -1;
+        const int lx = std::clamp((int)std::lround(128 + ax * 128), 0, 255), ly = std::clamp((int)std::lround(128 + ay * 128), 0, 255);
+        if (lx != lastLx || ly != lastLy) std::fprintf(stderr, "[INPUT] stick %d %d t=%llu\n", lx, ly, (unsigned long long)nowUs);
+        lastLx = lx; lastLy = ly;
+    }
     psp::host::g_ctrl.buttons = buttons;
-    psp::host::g_ctrl.lx = (uint8_t)std::clamp((int)std::lround(128 + ax * 127), 0, 255);
-    psp::host::g_ctrl.ly = (uint8_t)std::clamp((int)std::lround(128 + ay * 127), 0, 255);
+    // Full deflection must reach the ends (0 and 255): Dark Mirror only snaps to cover when the
+    // stick is pushed all the way, and 128 - 127 = 1 never counts as all the way up.
+    psp::host::g_ctrl.lx = (uint8_t)std::clamp((int)std::lround(128 + ax * 128), 0, 255);
+    psp::host::g_ctrl.ly = (uint8_t)std::clamp((int)std::lround(128 + ay * 128), 0, 255);
 }
 
 // ---- button hints -----------------------------------------------------------------------------
