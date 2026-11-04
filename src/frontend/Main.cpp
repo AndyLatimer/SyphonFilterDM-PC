@@ -72,7 +72,7 @@ const char* kDefaultBindings[IN_COUNT] = {
     "key:E, key:F, key:Up, pad:dpup, pad:x",                         // up: interact / climb / pick up
     "key:Left Ctrl, key:C, key:Down, pad:dpdown, pad:b",             // down: crouch / zoom out
     "key:G, key:Left, pad:dpleft",                                   // left: gadget select
-    "key:Q, key:Right, mouse:wheelup, mouse:wheeldown, pad:dpright, pad:rightshoulder", // right: weapon select / zoom in
+    "key:Q, key:Right, mouse:wheelup, mouse:wheeldown, pad:dpright", // right: weapon select / zoom in
     "key:Return, key:Space, pad:a",                                  // cross: confirm
     "",                                                              // circle
     "",                                                              // square
@@ -82,10 +82,10 @@ const char* kDefaultBindings[IN_COUNT] = {
     "key:Escape, key:P, pad:start",                                  // start: pause
     "key:Tab, pad:back, pad:touchpad",                               // select: command
     "key:W", "key:S", "key:A", "key:D",                              // stick
-    "",                                                              // aim down sights (Contagion only)
+    "pad:rightshoulder, mouse:x1, key:Z",                           // aim over the shoulder (the port's)
     "key:Left Shift", "",                                            // walk, creep
     "key:V, mouse:middle, pad:leftshoulder"};                        // cover
-const int kBindingsVersion = 2;
+const int kBindingsVersion = 3;
 
 struct FrontSettings {
     std::string iso;
@@ -120,11 +120,11 @@ struct FrontSettings {
     std::string lookUp = "triangle", lookDown = "cross", lookLeft = "square", lookRight = "circle";
     bool mouseLook = true;
     // Aim down sights (controls.ini [ADS]); fields of view in degrees, horizontal at 480x272.
-    bool adsEnabled = false; // Contagion's first-person ADS: not for this game
+    bool adsEnabled = true;  // aim over the shoulder (R1): the view closes in on the reticle
     bool adsToggle = false;  // Mode = Hold (false) or Toggle (true)
     float adsTransition = 0.18f;
-    float normalFov = 80.0f, adsFov = 65.0f; // 80: the game's own (glows drawn over the scene match it)
-    float adsSens = 0.65f;   // look sensitivity multiplier while aiming
+    float normalFov = 80.0f, adsFov = 56.0f; // 80: the game's own (glows drawn over the scene match it); 56: aiming
+    float adsSens = 0.5f;    // look sensitivity multiplier while aiming
     bool adsHideCrosshair = true, adsAllowFire = true;
     // weapons.ini: [Weapon.NAME] (the game's internal name, e.g. g01) overrides of the above.
     struct WeaponAds {
@@ -232,7 +232,7 @@ void loadSettings(FrontSettings& s, ca::Ini& ini, const std::string& dir) {
     s.padInvertY = getF(ini, "input", "pad_invert_y", 0) != 0;
     s.mouseSensX = getF(ini, "input", "mouse_sens_x", 1.0f);
     s.mouseSensY = getF(ini, "input", "mouse_sens_y", 1.0f);
-    s.adsEnabled = getB(ini, "ADS", "Enabled", false);
+    s.adsEnabled = getB(ini, "ADS", "Enabled", true);
     {
         std::string mode = ini.get("ADS", "Mode", "Hold");
         for (char& c : mode) c = (char)std::tolower((unsigned char)c);
@@ -243,9 +243,15 @@ void loadSettings(FrontSettings& s, ca::Ini& ini, const std::string& dir) {
     // drawn as flat overlays at the screen positions its own projection gives, so any other
     // field of view leaves them as a ghost around their objects. Older files had 85: reset once.
     s.normalFov = std::clamp(getF(ini, "ADS", "NormalFOV", 80.0f), 50.0f, 120.0f);
-    if ((int)getF(ini, "ADS", "FovVersion", 1) < 2) s.normalFov = 80.0f;
-    s.adsFov = std::clamp(getF(ini, "ADS", "ADSFOV", 65.0f), 20.0f, 120.0f);
-    s.adsSens = std::clamp(getF(ini, "ADS", "ADSMouseSensitivityMultiplier", 0.65f), 0.05f, 2.0f);
+    const int fovVersion = (int)getF(ini, "ADS", "FovVersion", 1);
+    if (fovVersion < 2) s.normalFov = 80.0f;
+    s.adsFov = std::clamp(getF(ini, "ADS", "ADSFOV", 56.0f), 20.0f, 120.0f);
+    s.adsSens = std::clamp(getF(ini, "ADS", "ADSMouseSensitivityMultiplier", 0.5f), 0.05f, 2.0f);
+    if (fovVersion < 3) { // the over-the-shoulder aim (version 3) replaces Contagion's ADS settings
+        s.adsEnabled = true;
+        s.adsFov = 56.0f;
+        s.adsSens = 0.5f;
+    }
     s.adsHideCrosshair = getB(ini, "ADS", "HideCrosshairWhileADS", true);
     s.adsAllowFire = getB(ini, "ADS", "AllowFiringWhileADS", true);
     // The game's guns by internal name, with the settings found for each (dev mode, F5/F6).
@@ -301,9 +307,12 @@ void loadSettings(FrontSettings& s, ca::Ini& ini, const std::string& dir) {
     s.invertY = getF(ini, "input", "invert_y", 0) != 0;
     // Older controls.ini files carry the first layout (PSP face buttons on the pad): replaced by
     // the modern one once.
-    const bool oldLayout = (int)getF(ini, "bindings", "version", 1) < kBindingsVersion;
+    const int bindingsVersion = (int)getF(ini, "bindings", "version", 1);
+    const bool oldLayout = bindingsVersion < 2;
     for (int i = 0; i < IN_COUNT; ++i) {
         s.bindingText[i] = oldLayout ? std::string(kDefaultBindings[i]) : ini.get("bindings", kInputNames[i], kDefaultBindings[i]);
+        // Version 3: R1 aims over the shoulder (it was weapon select, which stays on the d-pad).
+        if (bindingsVersion == 2 && (i == IN_ADS || i == IN_RIGHT)) s.bindingText[i] = kDefaultBindings[i];
         parseList(s.bindingText[i], s.bindings[i]);
     }
 }
@@ -346,7 +355,7 @@ void saveSettings(const FrontSettings& s, ca::Ini& ini, const std::string& dir) 
     ini.set("ADS", "Mode", s.adsToggle ? "Toggle" : "Hold");
     ini.set("ADS", "TransitionTime", fmt(s.adsTransition));
     ini.set("ADS", "NormalFOV", fmt(s.normalFov));
-    ini.set("ADS", "FovVersion", "2");
+    ini.set("ADS", "FovVersion", "3");
     ini.set("ADS", "ADSFOV", fmt(s.adsFov));
     ini.set("ADS", "ADSMouseSensitivityMultiplier", fmt(s.adsSens));
     ini.set("ADS", "HideCrosshairWhileADS", s.adsHideCrosshair ? "true" : "false");
@@ -414,7 +423,7 @@ void applyAdsSettings(const FrontSettings& s) {
     a.sightX = w ? w->sightX : 0.0f;
     a.sightY = w ? w->sightY : 0.0f;
     a.weaponCloser = w ? w->closer : 0.2f;
-    a.mode = w && w->mode == 1 ? 1 : 0;
+    a.mode = 1; // Dark Mirror: zoom only (the camera closes in over the shoulder, the reticle stays)
     a.pitchDeg = w ? w->pitch : NAN;
     a.yawDeg = w ? w->yaw : NAN;
     a.rollDeg = w ? w->roll : NAN;
@@ -886,7 +895,7 @@ const char* const kInputLabels[IN_COUNT] = {
     "Cruz - aceptar", "Círculo", "Cuadrado", "Triángulo - atrás", "L - apuntar / fijar blanco", "R - disparar",
     "Start - pausa", "Select - órdenes",
     "Stick - avanzar", "Stick - retroceder", "Stick - paso a la izquierda", "Stick - paso a la derecha",
-    "Apuntar con la mira", "Andar (sin correr)", "Andar con sigilo", "Cubrirse (pegarse a la pared)"};
+    "Apuntar sobre el hombro", "Andar (sin correr)", "Andar con sigilo", "Cubrirse (pegarse a la pared)"};
 
 // 0 keyboard, 1 mouse, 2 pad: a new binding replaces those of its own kind only.
 int bindingDevice(const ca::Binding& b) {
@@ -1042,8 +1051,8 @@ std::vector<ca::MenuItem> buildMenu(FrontSettings& s, SDL_Window* win, MenuState
     m.push_back(toggle("Invertir eje vertical", s.invertY));
     m.push_back(toggle("Invertir eje horizontal", s.invertX));
 
-    m.push_back(header("Apuntar con la mira (ADS)"));
-    m.push_back(toggle("Apuntar con la mira activado", s.adsEnabled, [&s] { applyAdsSettings(s); }));
+    m.push_back(header("Apuntar sobre el hombro (R1)"));
+    m.push_back(toggle("Apuntar sobre el hombro activado", s.adsEnabled, [&s] { applyAdsSettings(s); }));
     m.push_back(choice("Modo de apuntado", {"Mantener", "Pulsar para alternar"}, [&s] { return s.adsToggle ? 1 : 0; },
                        [&s](int k) { s.adsToggle = k != 0; }));
     m.push_back(slider("Sensibilidad al apuntar con la mira", s.adsSens, 0.05f, 2, 0.05f, true));
@@ -1111,7 +1120,7 @@ std::vector<ca::MenuItem> buildMenu(FrontSettings& s, SDL_Window* win, MenuState
         {"Invertir eje horizontal", "Invierte izquierda y derecha al girar."},
         {"Sensibilidad al apuntar con la mira", "Multiplica la velocidad del ratón y del mando mientras se apunta con la mira."},
         {"Modo de apuntado", "Mantener pulsado para apuntar, o pulsar una vez para alternar."},
-        {"Apuntar con la mira activado", "El arma sube a la altura de los ojos y se cierra el campo de visión."},
+        {"Apuntar sobre el hombro activado", "Con R1 la vista se acerca a la retícula y la cámara gira más despacio para afinar."},
         {"Campo de visión", "Grados en horizontal (el juego usa 80). Otro valor deja los brillos de dianas y marcas desplazados."},
         {"Texturas mejoradas (mipmaps + anisotrópico)", "Suelos y paredes lejanos nítidos y sin parpadeo a resoluciones altas."},
         {"Texturas en alta resolución (xBRZ)", "Amplía texturas, textos y HUD al cargarlos (el escalador de PPSSPP). 4x: textos más finos."},

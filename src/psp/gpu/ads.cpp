@@ -44,6 +44,9 @@ double nowUs() {
 float smoothstep(float t) { return t * t * (3 - 2 * t); }
 
 // Projection scale that turns the game's field of view into `deg`.
+// Dark Mirror's reticle in normalised device coordinates (y up): at about 120 of 272 lines.
+constexpr float kReticleNdcY = 1.0f - 2.0f * 120.0f / 272.0f;
+
 float fovScale(float deg) {
     deg = std::clamp(deg, 20.0f, 150.0f);
     return std::tan(kGameFovDeg * 0.5f * kDegToRad) / std::tan(deg * 0.5f * kDegToRad);
@@ -265,8 +268,15 @@ void AimDownSights::adjust(const float view[12], float viewportScaleX, float vie
     } else if (std::fabs(viewportScaleX) > 200) { // the level (full screen; the radar is small)
         host::g_levelProjY.store(proj44[5], std::memory_order_relaxed);
         if (fovScale_ != 1) {
-            proj44[0] *= fovScale_;
-            proj44[5] *= fovScale_;
+            // Zoom about the game's reticle, not the middle of the screen: what is under the
+            // reticle stays under it (Dark Mirror draws it a little above the middle), so the
+            // shots still go where it points. Clip y' = f y + (1 - f) yr w.
+            const float f = fovScale_;
+            const float yr = host::g_adsSettings.mode.load() == 1 ? kReticleNdcY : 0.0f;
+            for (int c = 0; c < 4; ++c) {
+                proj44[c * 4 + 0] *= f;
+                proj44[c * 4 + 1] = f * proj44[c * 4 + 1] + (1.0f - f) * yr * proj44[c * 4 + 3];
+            }
         }
     }
 }

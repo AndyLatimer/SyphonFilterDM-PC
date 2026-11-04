@@ -1,0 +1,9 @@
+shot l0.png
+hold L
+wait 1.0
+shot l1.png
+wait 1.0
+shot l2.png
+release
+wait 1
+shot l3.png

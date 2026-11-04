@@ -180,3 +180,14 @@ Método: volcados de RAM de usuario (`ca_psprun` `memdump`) con ○/□/△ mant
   0x08a1db08 (dirección de retorno 0x08a1db10). El gancho trata los dos; el movimiento se toma una
   vez por fotograma y ambos reciben la misma velocidad. Probado asomado sobre la caja del
   entrenamiento 1 (`aim` a derecha e izquierda gira la vista).
+
+## 15. Apuntar sobre el hombro (R1)
+- Cambiar los brazos de cámara del juego en RAM (tabla de modos en 0x08eb0c80: `Default_Aim`
+  en 0x08eb0cf0, `Default_OverShoulder` en 0x08eb1370; copia en el objeto cámara) no movió la
+  cámara: el juego los toma por otra vía. Se hace en el renderizador: con R1 el campo de visión del
+  escenario pasa de 80 a 56 (unos 1,4x) en 0,18 s, acercándose sobre la retícula (fila y de la
+  proyección: y' = f·y + (1 − f)·yr·w, con la retícula en la línea 120 de 272), así que lo que
+  queda bajo la retícula sigue bajo ella y los disparos van donde apunta. La cámara directa gira
+  a la mitad de velocidad mientras.
+- Controles (versión 3 de `controls.ini`): R1 apuntar sobre el hombro; elegir arma queda en la
+  flecha derecha / Q; L2 fijar blanco (L de la PSP) y R2 disparar, como antes.

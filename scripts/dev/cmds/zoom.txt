@@ -1,0 +1,10 @@
+adsw 1
+fov 80 56
+wait 1
+shot z0.png
+ads 1
+wait 1
+shot z1.png
+ads 0
+wait 1
+shot z2.png
