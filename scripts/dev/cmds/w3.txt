@@ -1,0 +1,2 @@
+maxdraw 1
+wait 4

@@ -96,17 +96,20 @@ Método: volcados de RAM de usuario (`ca_psprun` `memdump`) con ○/□/△ mant
 - Esquema Advanced: giro ≈150°/s con el stick a tope; respuesta casi nula por debajo de ~0,5.
 
 ## 8. Bucle de fotogramas y límite de 30 fps
-- Limitador en 0x08c2275c: calcula 1e6 / (tiempo del fotograma en µs) y espera un vblank mientras
-  supere el objetivo guardado en objeto+484 (60 al arrancar, **30 en los niveles**). Por eso el
-  juego se quedaba en 30 fps aunque cada fotograma costara ~4 ms (60 esperas por 30 cambios de
-  búfer en `CA_PERF`). La volteada real es 0x08c1ca90 (SetFrameBuf); objeto+472 cuenta fotogramas.
-- La lógica usa el tiempo medido del fotograma (redondeado a 1/60 s, 0x08c20914), así que el ritmo
-  del juego no depende de los fps.
-- Parche (`tools/recomp/games/UCES00310/patches.tsv`): en 0x08c227a4 `lw a1,484(s0)` →
-  `ori a1,zero,60`. Tras él, en la prueba sin GPU hay ~1 espera por cambio de búfer (antes 2).
-  El tope del PC sigue siendo `[video] frame_rate` (60 o 30).
+- El hilo del bucle principal duerme hasta que la interrupción de vblank lo despierta (manejador
+  0x08c193dc: `sceKernelWakeupThread`) y, además, el limitador 0x08c2275c espera otro vblank
+  (`sceDisplayWaitVblankStart` desde 0x08c1c9ac) si 1e6 / tiempo del fotograma supera el objetivo
+  de objeto+484. Dos vblanks por fotograma: 30 fps. La volteada es 0x08c1ca90 (SetFrameBuf).
+- La lógica usa el tiempo medido (0x08c20914): con 60 fps, los relojes del juego avanzan 5,3 s
+  en 5,3 s reales (volcados de RAM, `scripts/dev/cmds/gt.txt`).
+- Parche (`tools/recomp/games/UCES00310/patches.tsv`): 0x08c227c8 `bc1t` → `b`, el limitador no
+  espera nunca. Medido sin renderizador (`CA_NOGL=1`, `CA_VBLANK_TRACE=1`): 59,9 volteadas/s en
+  nivel y menús. El tope de 30 del PC (`[video] frame_rate = 30`) se aplica ahora en
+  `sceDisplaySetFrameBuf` (dos vblanks entre volteadas): 29,97/s.
+- El primer intento (objetivo 60 en 0x08c227a4) no bastaba: la espera del limitador más la del
+  despertar seguían dando dos vblanks.
 
-## 9. Candado del entrenamiento 1 (en curso)
+## 9. Candado del entrenamiento 1 (aparcado: el usuario pudo seguir)
 - El nivel es `SINGLE/TRAIN_1P/TRAIN_1` (el menú de entrenamiento abre el 1 con X; DERECHA pasa al 2).
 - El candado es el objeto `NI_REFB_Latch` de `TRAIN_1/FREED_L.HGZ` (definición en 0x75e0 del flujo
   descomprimido): pieza `NI_REFB_Latch_lattchA.bpm` (textura `KEYHOLELATCH01.TDX`), puerta animada

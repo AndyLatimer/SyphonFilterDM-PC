@@ -139,14 +139,30 @@ void registerDeviceHle() {
         g_display.bufferWidth = A(c, 1);
         g_display.pixelFormat = A(c, 2);
         g_display.frameCount++;
+        static const bool trace = std::getenv("CA_VBLANK_TRACE") != nullptr;
+        if (trace) std::fprintf(stderr, "[VBL] setframebuf %08x ra=%08x t=%llu\n", A(c, 0), c->r[31], (unsigned long long)nowUs());
         ret(c, 0);
+        if (host::g_targetFps.load() == 30) {
+            // 30 fps cap: Dark Mirror is paced by its vblank wake-up (its own limiter is patched
+            // out, tools/recomp/games/UCES00310/patches.tsv), so hold each flip to two vblanks.
+            static uint64_t lastFlip = 0;
+            const uint64_t period = (uint64_t)(2 * vblankUs()), now = nowUs();
+            if (lastFlip && now < lastFlip + period - 1000) delayCurrentThread(lastFlip + period - 1000 - now, false);
+            lastFlip = nowUs();
+        }
         if (gpu::installed() && A(c, 0)) {
             ge::waitIdle(); // the frame's lists are drawn before it is shown (GE thread)
             gpu::setDisplay(A(c, 0), A(c, 1), A(c, 2));
         }
     });
     registerHle("sceDisplayGetVcount", [](Ctx* c) { ret(c, (uint32_t)vcount()); });
-    registerHle("sceDisplayWaitVblankStart", [](Ctx* c) { waitVblank(false); ret(c, 0); });
+    registerHle("sceDisplayWaitVblankStart", [](Ctx* c) {
+        static const bool trace = std::getenv("CA_VBLANK_TRACE") != nullptr;
+        if (trace) std::fprintf(stderr, "[VBL] ra=%08x caller=%08x t=%llu\n", c->r[31], psp::read32(c->r[29]), (unsigned long long)nowUs());
+        waitVblank(false);
+        if (trace) std::fprintf(stderr, "[VBL] back t=%llu\n", (unsigned long long)nowUs());
+        ret(c, 0);
+    });
     registerHle("sceDisplayWaitVblankStartCB", [](Ctx* c) { waitVblank(true); ret(c, 0); });
     registerHle("sceDisplayGetFramePerSec", [](Ctx* c) { c->f[0] = 59.9400599f; ret(c, 0); });
 

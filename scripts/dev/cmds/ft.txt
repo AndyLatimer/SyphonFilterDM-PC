@@ -1,0 +1,3 @@
+shot ft_0.png
+wait 10
+shot ft_1.png

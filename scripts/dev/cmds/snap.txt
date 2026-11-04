@@ -1,0 +1,27 @@
+stick 128 0
+wait 1.4
+release
+wait 1.5
+shot sn_0.png
+stick 128 0
+wait 1.5
+shot sn_1.png
+release
+wait 1
+shot sn_2.png
+hold TRIANGLE
+wait 0.3
+release
+wait 1.5
+shot sn_3.png
+stick 128 0
+wait 0.3
+hold TRIANGLE
+wait 0.3
+release
+wait 1.5
+shot sn_4.png
+stick 0 128
+wait 1
+shot sn_5.png
+release

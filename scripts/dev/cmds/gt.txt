@@ -1,0 +1,5 @@
+memdump g0.bin
+wait 5
+memdump g1.bin
+wait 5
+memdump g2.bin

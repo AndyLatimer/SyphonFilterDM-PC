@@ -1,0 +1,8 @@
+shot s3_0.png
+stick 128 0
+wait 1.4
+release
+wait 3
+shot s3_1.png
+wait 4
+shot s3_2.png

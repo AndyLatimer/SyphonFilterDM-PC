@@ -105,11 +105,11 @@ Gabe responde al stick (sale de la cobertura, gira, apunta); la pausa muestra la
 - [ ] Controles de PC: el front end es el de Contagion (FPS). Sin ganchos, el ratón no mueve la
   cámara; teclado y mando se traducen a botones/stick de PSP.
 
-- [x] **60 fps en los niveles** (parche del limitador, `REVERSE_ENGINEERING.md` §8): el juego
-  original se limita a 30; la lógica va por tiempo medido. Pendiente confirmar en el PC del usuario.
+- [x] **60 fps** (parche del limitador, `REVERSE_ENGINEERING.md` §8): medido 59,9 volteadas/s sin
+  renderizador y relojes del juego a velocidad real. Pendiente confirmar en el PC del usuario.
 
 ## Problemas conocidos
-- Candado del entrenamiento 2: no se ve ni reacciona a los disparos (objeto sin crear, sin investigar).
+- Candado del entrenamiento 1: no se ve (aparcado, `REVERSE_ENGINEERING.md` §9).
 - Texto de munición del HUD descentrado con escala de render 3 (no reproducido con 1 y 2).
 - `sqrt.s` con NaN negativo (heredado, 3 palabras en `cpu_diff`).
 - Ajustes de GPU de Contagion activados por contenido (`REVERSE_ENGINEERING.md` §3): revisar.

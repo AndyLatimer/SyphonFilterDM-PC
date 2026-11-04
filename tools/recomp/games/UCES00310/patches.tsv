@@ -1,7 +1,8 @@
 # Instruction patches for Syphon Filter: Dark Mirror (UCES-00310): address, original, new.
-# Frame limiter (0x08c2275c): waits a vblank while 1e6 / (frame time in us) is above the target
-# frame rate at object+484 (60 at start-up, 30 in the levels: the PSP version runs at 30 fps).
-# The logic takes the measured frame time (rounded to 1/60 s, 0x08c20914), so the port
-# compares with 60 instead: "lw a1, 484(s0)" -> "ori a1, zero, 60". The PC cap
-# (config.ini [video] frame_rate = 30 or 60, settings menu) still limits it in the runtime.
-08c227a4  8e0501e4  3405003c
+# Frame pacing: the main loop thread sleeps until the vblank interrupt wakes it (handler
+# 0x08c193dc: sceKernelWakeupThread), then the frame limiter (0x08c2275c) waits one more vblank
+# whenever 1e6 / frame time exceeds the target at object+484. Two vblanks per frame: 30 fps.
+# The logic runs on the measured frame time (0x08c20914), so the port skips the limiter's wait
+# ("bc1t" -> "b") and the vblank wake-up alone paces the game: 60 fps. The PC 30 fps setting
+# (config.ini [video] frame_rate) still works in the runtime.
+08c227c8  45010003  10000003
