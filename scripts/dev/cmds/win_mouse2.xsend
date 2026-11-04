@@ -1,0 +1,34 @@
+wait 30
+key Return tap
+wait 6
+key Escape tap
+wait 8
+key Return tap
+wait 8
+key Return tap
+wait 10
+key Return tap
+wait 10
+key Return tap
+wait 10
+key Return tap
+wait 10
+key Return tap
+wait 90
+shot m0.png
+move 40 0
+wait 0.05
+move 40 0
+wait 0.05
+move 40 0
+wait 0.05
+move 40 0
+wait 0.05
+move 40 0
+wait 1
+shot m1.png
+move 0 -40
+wait 0.05
+move 0 -40
+wait 1
+shot m2.png

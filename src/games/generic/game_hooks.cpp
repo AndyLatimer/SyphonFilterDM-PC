@@ -11,6 +11,8 @@
 // games/<disc id>/hooks.tsv that names them.
 extern "C" void ca_hook_player_turn(Ctx*) {}
 extern "C" void ca_hook_lua_pcall(Ctx*) {}
+extern "C" void ca_hook_turn_rate(Ctx*) {}
+extern "C" void ca_hook_turn_input(Ctx*) {}
 
 namespace psp::kernel {
 void installTextPatches(IsoReader&) {}

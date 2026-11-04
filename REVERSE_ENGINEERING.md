@@ -162,3 +162,17 @@ Método: volcados de RAM de usuario (`ca_psprun` `memdump`) con ○/□/△ mant
 - El sombreador del texto 2D trabaja en los texeles reales (`textureSize`), así que los glifos
   ampliados se ven con su detalle nuevo. Comparado en la pantalla de misión: "PARA CONTINUAR" y el
   botón X salen con bordes redondeados en vez de escalones.
+
+## 14. Cámara directa (ratón y stick derecho)
+- El giro del jugador y de la cámara pasa por un filtro (0x08a1b208) llamado desde 0x08a221d8 con
+  el objeto de giro del jugador (en el entrenamiento 1, 0x09871670). Su entrada es la dirección de
+  los botones de mirar (x = cabeceo, +1 arriba con triángulo; z = giro, −1 a la derecha con
+  círculo); la acelera hasta una velocidad que guarda en +0x70 (este fotograma) y +0x30 (el
+  anterior). Esa velocidad es lo que gira: ≈2,2–2,4 rad/s por unidad (medido con la matriz de la
+  cámara, objeto 0x098bd4d0, rotación en +0x1120; `CA_TEST_YAW_RATE`).
+- Gancho `ca_hook_turn_rate` en 0x08a1b2cc (final del filtro; solo si la dirección de retorno
+  guardada en sp+64 es 0x08a221e0): sustituye las dos velocidades por la que gira exactamente lo que
+  el ratón o el stick derecho han movido desde el fotograma anterior (`g_aim`), así que no hay
+  aceleración ni inercia. Activa `g_directAim`: el front end deja de simular botones de mirar.
+- Comprobado con `ca_psprun` (`aim 0.5 0` gira 0,61 rad; `aim -1 0`, 1,02) y en el ejecutable con
+  movimientos reales del ratón (XTest).

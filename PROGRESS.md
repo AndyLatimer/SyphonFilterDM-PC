@@ -90,9 +90,8 @@ Gabe responde al stick (sale de la cobertura, gira, apunta); la pausa muestra la
   analógico del esquema Advanced (giro proporcional, ~150°/s a tope; medido en el radar).
 
 ## Parcialmente implementado / sin verificar
-- [ ] Cámara directa con ratón (ángulo exacto por cuenta, sin aceleración del juego): la orientación
-  no es un ángulo guardado; ver `REVERSE_ENGINEERING.md` §7 (eje de apuntado 0x099b8f20, cuerpo
-  físico con amortiguación 0x09a379e0).
+- [x] **Cámara directa con ratón y stick derecho** (2026-11-04, `REVERSE_ENGINEERING.md` §14):
+  gancho en el filtro de giro del jugador; giro proporcional, sin aceleración ni inercia.
 - [ ] La mira ADS de Contagion está desactivada por defecto (no corresponde a este juego).
 - [ ] Descifrado real de un EBOOT.BIN `~PSP`: compila y rechaza contenedores inválidos; no hay
   vector de prueba real hasta tener un disco que lo necesite (puede que Dark Mirror no lo necesite).
