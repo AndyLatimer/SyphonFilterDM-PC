@@ -108,6 +108,13 @@ Gabe responde al stick (sale de la cobertura, gira, apunta); la pausa muestra la
 - [x] **60 fps** (parche del limitador, `REVERSE_ENGINEERING.md` §8): medido 59,9 volteadas/s sin
   renderizador y relojes del juego a velocidad real. Pendiente confirmar en el PC del usuario.
 
+- [x] **Textos del HUD nítidos** (2026-11-04): el texto 2D dibujado texel a texel (munición,
+  objetivos, subtítulos) se muestrea solo dentro de su glifo y con bilineal "nítido": a escala de
+  render > 1 ya no se mezclan los glifos vecinos del atlas ni se emborrona.
+- [x] **Controles modernos del mando** (versión 2 de `controls.ini`): L1 cubrirse (gesto del juego:
+  soltar el stick y empujar hacia la pared, probado), Cuadrado usar/trepar, Círculo agacharse,
+  R1 elegir arma (con los botones frontales como ranuras), L2/R2 apuntar/disparar.
+
 ## Problemas conocidos
 - Candado del entrenamiento 1: no se ve (aparcado, `REVERSE_ENGINEERING.md` §9).
 - Texto de munición del HUD descentrado con escala de render 3 (no reproducido con 1 y 2).

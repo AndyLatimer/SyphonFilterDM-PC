@@ -1242,6 +1242,25 @@ void Recorder::emit(std::vector<Vertex>& vin, int prim, bool through, bool hasCo
     }
     if (out.empty()) return;
     if (through) op.st.cull = false;
+    if (textured && through && op.st.texKind != 2 && op.glMode == GL_TRIANGLES && out.size() >= 3) {
+        // 2D drawn texel for pixel (fonts, HUD): each triangle carries its texel rectangle (in
+        // the unused normal) and the fragment shader keeps the bilinear filter inside it. At a
+        // render scale above 1 the filter otherwise blends in the neighbouring glyphs of the font
+        // atlas: stray lines and halos on the ammo counter and the mission objectives.
+        const bool texelUv = !transformedRect || (reg(CMD_TEXMAPMODE) & 3) == 0;
+        for (size_t t = 0; texelUv && t + 2 < out.size(); t += 3) {
+            float x0 = 1e9f, x1 = -1e9f, y0 = 1e9f, y1 = -1e9f, u0 = 1e9f, u1 = -1e9f, v0 = 1e9f, v1 = -1e9f;
+            for (size_t k = t; k < t + 3; ++k) {
+                const Vertex& v = out[k];
+                x0 = std::min(x0, v.pos[0]); x1 = std::max(x1, v.pos[0]); y0 = std::min(y0, v.pos[1]); y1 = std::max(y1, v.pos[1]);
+                u0 = std::min(u0, v.uv[0]); u1 = std::max(u1, v.uv[0]); v0 = std::min(v0, v.uv[1]); v1 = std::max(v1, v.uv[1]);
+            }
+            auto oneToOne = [](float a, float b) { return a > 0.5f && std::fabs(a - b) <= std::max(0.6f, 0.04f * a); };
+            if (!oneToOne(x1 - x0, u1 - u0) || !oneToOne(y1 - y0, v1 - v0) || u0 < 0 || v0 < 0 || u1 > 2047 || v1 > 2047) continue;
+            const float pu = std::round(2 * u0) * 4096.0f + std::round(2 * u1), pv = std::round(2 * v0) * 4096.0f + std::round(2 * v1);
+            for (size_t k = t; k < t + 3; ++k) { out[k].nrm[0] = pu; out[k].nrm[1] = pv; out[k].nrm[2] = -12345.0f; }
+        }
+    }
 
     // Widescreen, sampling a widened buffer: UVs spanning its whole 480-pixel width (screen copies
     // for glow/blur passes) take the whole widened width, so the copy holds the full picture and
@@ -1478,10 +1497,10 @@ void debugFrame(const Frame& fr) {
             ++shown;
             const float* v = &fr.verts[op.first * kFloatsPerVertex];
             const Ubo& u = fr.ubos[op.ubo];
-            std::fprintf(stderr, "  draw mode=%u n=%zu tex=%d/%d through=%g clear=%g sc=%d,%d,%d,%d fb=%gx%g v0=(%g,%g,%g) uv=(%g,%g) c=(%g,%g,%g,%g) mask=%d%d%d%d blend=%d depth=%d/%x\n",
+            std::fprintf(stderr, "  draw mode=%u n=%zu tex=%d/%d through=%g clear=%g sc=%d,%d,%d,%d fb=%gx%g v0=(%g,%g,%g) uv=(%g,%g) c=(%g,%g,%g,%g) mask=%d%d%d%d blend=%d depth=%d/%x filt=%x/%x\n",
                          op.glMode, op.count, op.st.texKind, op.st.texId, u.vpScale[3], u.texFlags[2], op.st.scissor[0], op.st.scissor[1],
                          op.st.scissor[2], op.st.scissor[3], u.offsetFb[2], u.offsetFb[3], v[0], v[1], v[2], v[6], v[7], v[8], v[9], v[10], v[11],
-                         op.st.colorMask[0], op.st.colorMask[1], op.st.colorMask[2], op.st.colorMask[3], op.st.blend, op.st.depthTest, op.st.depthFunc);
+                         op.st.colorMask[0], op.st.colorMask[1], op.st.colorMask[2], op.st.colorMask[3], op.st.blend, op.st.depthTest, op.st.depthFunc, op.st.minFilter, op.st.magFilter);
             if (full && std::getenv("CA_GPU_VERTS"))
                 for (size_t k = 0; k < op.count && k < 8; ++k) {
                     const float* w = &fr.verts[(op.first + k) * kFloatsPerVertex];

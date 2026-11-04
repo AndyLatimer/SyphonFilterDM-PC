@@ -1,0 +1,9 @@
+stick 128 0
+wait 1.6
+release
+wait 0.12
+stick 128 0
+wait 0.4
+release
+wait 1.2
+shot cv_0.png

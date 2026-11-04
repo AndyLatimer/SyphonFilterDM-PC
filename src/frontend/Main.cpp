@@ -48,11 +48,12 @@ enum PspInput {
     IN_ADS,   // aim down sights (the port's own feature, not a PSP button)
     IN_WALK,  // keyboard movement at a walk (keys run by default: the stick pushed all the way)
     IN_CREEP, // keyboard movement at a slight push (slow, quiet walk; the game has no crouch)
+    IN_COVER, // snap to cover: the stick let go for a moment, then pushed (the game's snap gesture)
     IN_COUNT
 };
 const char* kInputNames[IN_COUNT] = {"up", "down", "left", "right", "cross", "circle", "square", "triangle",
                                      "l", "r", "start", "select", "stick_up", "stick_down", "stick_left", "stick_right",
-                                     "aim_down_sights", "walk", "creep"};
+                                     "aim_down_sights", "walk", "creep", "cover"};
 const uint32_t kInputButtons[12] = {
     psp::host::BTN_UP, psp::host::BTN_DOWN, psp::host::BTN_LEFT, psp::host::BTN_RIGHT, psp::host::BTN_CROSS,
     psp::host::BTN_CIRCLE, psp::host::BTN_SQUARE, psp::host::BTN_TRIANGLE, psp::host::BTN_LTRIGGER,
@@ -63,22 +64,28 @@ const uint32_t kInputButtons[12] = {
 // left = gadget select, down = crouch / zoom out, select = command, start = pause. In the menus
 // cross confirms and triangle goes back. The mouse and the right stick aim through the look
 // buttons until the game's camera is driven directly (psp::host::g_directAim).
+// Modern pad layout (bindings version 2): the right stick turns the camera, so the face buttons
+// do the jobs the d-pad did on the PSP: square interact / climb / pick up (up), circle crouch
+// (down), R1 held = weapon select (right; the face buttons are then the PSP's slot buttons),
+// L1 = snap to cover. Cross confirms and triangle goes back in the menus as on the PSP.
 const char* kDefaultBindings[IN_COUNT] = {
-    "key:Q, key:Up, mouse:wheelup, mouse:wheeldown, pad:dpup",       // up: weapon select
-    "key:Left Ctrl, key:C, key:Down, pad:dpdown",                    // down: crouch / zoom out
+    "key:E, key:F, key:Up, pad:dpup, pad:x",                         // up: interact / climb / pick up
+    "key:Left Ctrl, key:C, key:Down, pad:dpdown, pad:b",             // down: crouch / zoom out
     "key:G, key:Left, pad:dpleft",                                   // left: gadget select
-    "key:E, key:F, key:Right, pad:dpright",                          // right: interact / zoom in
-    "key:Return, key:Space, pad:a",                                  // cross: confirm / aim down
-    "pad:b",                                                         // circle: aim right
-    "pad:x",                                                         // square: aim left
-    "key:Backspace, pad:y",                                          // triangle: back / aim up
-    "mouse:right, key:Left Alt, pad:lefttrigger, pad:leftshoulder",  // L: manual aim / target lock
-    "mouse:left, pad:righttrigger, pad:rightshoulder",               // R: fire
+    "key:Q, key:Right, mouse:wheelup, mouse:wheeldown, pad:dpright, pad:rightshoulder", // right: weapon select / zoom in
+    "key:Return, key:Space, pad:a",                                  // cross: confirm
+    "",                                                              // circle
+    "",                                                              // square
+    "key:Backspace, pad:y",                                          // triangle: back
+    "mouse:right, key:Left Alt, pad:lefttrigger",                    // L: manual aim / target lock
+    "mouse:left, pad:righttrigger",                                  // R: fire
     "key:Escape, key:P, pad:start",                                  // start: pause
     "key:Tab, pad:back, pad:touchpad",                               // select: command
     "key:W", "key:S", "key:A", "key:D",                              // stick
     "",                                                              // aim down sights (Contagion only)
-    "key:Left Shift", ""};                                           // walk, creep
+    "key:Left Shift", "",                                            // walk, creep
+    "key:V, mouse:middle, pad:leftshoulder"};                        // cover
+const int kBindingsVersion = 2;
 
 struct FrontSettings {
     std::string iso;
@@ -277,8 +284,11 @@ void loadSettings(FrontSettings& s, ca::Ini& ini, const std::string& dir) {
         s.weaponAds[sec.substr(7)] = w;
     }
     s.invertY = getF(ini, "input", "invert_y", 0) != 0;
+    // Older controls.ini files carry the first layout (PSP face buttons on the pad): replaced by
+    // the modern one once.
+    const bool oldLayout = (int)getF(ini, "bindings", "version", 1) < kBindingsVersion;
     for (int i = 0; i < IN_COUNT; ++i) {
-        s.bindingText[i] = ini.get("bindings", kInputNames[i], kDefaultBindings[i]);
+        s.bindingText[i] = oldLayout ? std::string(kDefaultBindings[i]) : ini.get("bindings", kInputNames[i], kDefaultBindings[i]);
         parseList(s.bindingText[i], s.bindings[i]);
     }
 }
@@ -332,6 +342,7 @@ void saveSettings(const FrontSettings& s, ca::Ini& ini, const std::string& dir) 
     ini.set("input", "mouse_sens_y", std::to_string(s.mouseSensY));
     ini.set("input", "invert_y", s.invertY ? "1" : "0");
     for (int i = 0; i < IN_COUNT; ++i) ini.set("bindings", kInputNames[i], s.bindingText[i]);
+    ini.set("bindings", "version", std::to_string(kBindingsVersion));
     const std::pair<const char*, bool (*)(const std::string&)> files[] = {
         {"config.ini", inConfig}, {"graphics.ini", inGraphics}, {"controls.ini", inControls}, {"weapons.ini", inWeapons}};
     static const char* const kHeaders[] = {
@@ -397,6 +408,8 @@ struct InputState {
     float aimStickX = 0, aimStickY = 0;     // advanced scheme: PSP analog stick from the mouse
     float padAimX = 0, padAimY = 0;         // advanced scheme: ... from the pad's right stick
     bool adsOn = false, adsWasHeld = false;
+    uint64_t coverStartUs = 0;              // snap to cover gesture in progress
+    float coverX = 0, coverY = -1;          // its push direction (the last stick direction)
     // Scope weapons: the zoom wanted from the game's scope (-1: none pending), taps of its
     // button left, the end of the current tap and the earliest next one (SDL ticks).
     int scopeWant = -1, scopeTaps = 0;
@@ -468,6 +481,17 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
     }
     in.confirmWasHeld = confirm;
     for (int i = 0; i < 12; ++i) if (held[i]) buttons |= kInputButtons[i];
+    // R1 held (weapon select on the right button): the pad's face buttons are the PSP's again,
+    // the weapon slots of its selection screen.
+    if (in.pad && SDL_GameControllerGetButton(in.pad, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) {
+        const std::pair<SDL_GameControllerButton, uint32_t> face[] = {
+            {SDL_CONTROLLER_BUTTON_A, psp::host::BTN_CROSS}, {SDL_CONTROLLER_BUTTON_B, psp::host::BTN_CIRCLE},
+            {SDL_CONTROLLER_BUTTON_X, psp::host::BTN_SQUARE}, {SDL_CONTROLLER_BUTTON_Y, psp::host::BTN_TRIANGLE}};
+        bool any = false;
+        for (const auto& [pb, bit] : face)
+            if (SDL_GameControllerGetButton(in.pad, pb)) { buttons |= bit; any = true; }
+        if (any) buttons &= ~(psp::host::BTN_UP | psp::host::BTN_DOWN);
+    }
 
     // Aim down sights (drawn by the renderer, gpu/ads.h); slower look while aiming.
     if (s.adsToggle) {
@@ -634,6 +658,26 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
         ax = padAiming ? in.padAimX : (std::fabs(in.aimStickX) < 0.05f ? 0.0f : in.aimStickX);
         ay = padAiming ? in.padAimY : (std::fabs(in.aimStickY) < 0.05f ? 0.0f : in.aimStickY);
     }
+    // Snap to cover: the game snaps when the stick, let go next to a wall, is pushed into it.
+    // The cover button does that gesture: 0.25 s at rest, then 0.45 s pushed the way Gabe was
+    // last moved (forward if he was standing).
+    {
+        static bool coverWasHeld = false;
+        if (std::fabs(ax) > 0.3f || std::fabs(ay) > 0.3f) {
+            const float m = std::sqrt(ax * ax + ay * ay);
+            in.coverX = ax / m; in.coverY = ay / m;
+        } else if (!in.coverStartUs) {
+            in.coverX = 0; in.coverY = -1;
+        }
+        if (held[IN_COVER] && !coverWasHeld) in.coverStartUs = nowUs;
+        coverWasHeld = held[IN_COVER];
+        if (in.coverStartUs) {
+            const uint64_t t = nowUs - in.coverStartUs;
+            if (t < 250000) { ax = ay = 0; }
+            else if (t < 700000) { ax = in.coverX; ay = in.coverY; }
+            else in.coverStartUs = 0;
+        }
+    }
     psp::host::g_ctrl.buttons = buttons;
     psp::host::g_ctrl.lx = (uint8_t)std::clamp((int)std::lround(128 + ax * 127), 0, 255);
     psp::host::g_ctrl.ly = (uint8_t)std::clamp((int)std::lround(128 + ay * 127), 0, 255);
@@ -764,11 +808,11 @@ GLuint makeProgram(const char* vs, const char* fs) {
 // ---- options menu (F1) ------------------------------------------------------------------------
 
 const char* const kInputLabels[IN_COUNT] = {
-    "Arriba - mira telescópica", "Abajo - fijar blanco", "Izquierda - cambiar de arma", "Derecha - recargar",
-    "Cruz - mirar abajo / aceptar", "Círculo - mirar a la derecha / atrás", "Cuadrado - mirar a la izquierda",
-    "Triángulo - mirar arriba / atrás", "L - saltar", "R - disparar", "Start - pausa", "Select - visor",
+    "Arriba - usar / trepar / coger", "Abajo - agacharse", "Izquierda - accesorio", "Derecha - elegir arma",
+    "Cruz - aceptar", "Círculo", "Cuadrado", "Triángulo - atrás", "L - apuntar / fijar blanco", "R - disparar",
+    "Start - pausa", "Select - órdenes",
     "Stick - avanzar", "Stick - retroceder", "Stick - paso a la izquierda", "Stick - paso a la derecha",
-    "Apuntar con la mira", "Andar (sin correr)", "Andar con sigilo"};
+    "Apuntar con la mira", "Andar (sin correr)", "Andar con sigilo", "Cubrirse (pegarse a la pared)"};
 
 // 0 keyboard, 1 mouse, 2 pad: a new binding replaces those of its own kind only.
 int bindingDevice(const ca::Binding& b) {

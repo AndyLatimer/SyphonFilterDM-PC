@@ -43,3 +43,12 @@ Esquema "Standard (Free Aim)" del juego.
 DualSense / mando: stick izq. moverse, stick der. mirar, R2 disparar, L2 fijar blanco,
 botones = los de la PSP (X, circulo, cuadrado, triangulo), cruceta = la de la PSP,
 Options = pausa, Create / panel tactil = ordenes. Funciona por USB sin Steam.
+
+Mando (DualSense / Xbox), distribucion moderna:
+  Stick izquierdo mover, stick derecho camara, R2 disparar, L2 apuntar / fijar blanco,
+  L1 cubrirse (pegarse a la pared o caja que tengas delante), Cuadrado usar / trepar / coger,
+  Circulo agacharse, R1 mantenido elegir arma (con R1 pulsado los botones Cuadrado, Circulo,
+  Triangulo y Cruz eligen la ranura como en la PSP), Cruz aceptar, Triangulo atras,
+  Options pausa, panel tactil ordenes. Teclado: V o boton central del raton para cubrirse,
+  E usar, Ctrl agacharse, Q elegir arma.
+  Si ya tenias controls.ini, los controles se pasan a esta distribucion la primera vez.
