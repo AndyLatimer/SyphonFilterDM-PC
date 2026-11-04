@@ -44,4 +44,4 @@ docs/cac/, docs/ca1/     lo específico de Contagion y Coded Arms, como referenc
 game/                    tu copia del juego (no se sube)
 ```
 
-Licencia: GPL-2.0-or-later (incluye código de PPSSPP); los binarios que enlazan libkirk son GPL-3.0.
+Licencia: GPL-2.0-or-later (incluye código de PPSSPP); los binarios que enlazan libkirk y xBRZ (`third_party/xbrz`) son GPL-3.0.

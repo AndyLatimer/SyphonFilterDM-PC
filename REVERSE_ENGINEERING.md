@@ -153,3 +153,12 @@ Método: volcados de RAM de usuario (`ca_psprun` `memdump`) con ○/□/△ mant
   del escenario y también el texto pixelado de la fuente de la PSP.
 - Nitidez (`sharpen`, 0,35) y viveza del color (`vivid`, 0,3) en el sombreador de presentación;
   0 deja la imagen original. Probado en el ejecutable (`scripts/dev/cmds/win_gfx.xsend`).
+
+## 13. Texturas y textos en alta resolución (xBRZ)
+- `[video] texture_upscale` (0, 2, 3, 4; por defecto 4): cada textura de un nivel se amplía al
+  subirla con xBRZ (`third_party/xbrz`, el escalador de PPSSPP, GPL-3.0), repartida en franjas
+  entre los núcleos si es grande. Las coordenadas siguen siendo las de la PSP (normalizadas).
+- Texturas animadas (contenido cambiado más de 3 veces) se dejan sin ampliar para no frenar.
+- El sombreador del texto 2D trabaja en los texeles reales (`textureSize`), así que los glifos
+  ampliados se ven con su detalle nuevo. Comparado en la pantalla de misión: "PARA CONTINUAR" y el
+  botón X salen con bordes redondeados en vez de escalones.

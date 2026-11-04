@@ -17,6 +17,7 @@ struct Settings {
     bool forceLinear = false; // bilinear filtering on every texture
     float wideAspect = 0;     // > 0: display buffers widened to this aspect (Hor+), e.g. 21/9
     bool enhancedTextures = true; // 3D: mipmaps made for single-level textures + anisotropic filtering
+    int textureUpscale = 0;       // 0 off, 2..4: textures enlarged on upload with xBRZ (text, HUD, world)
 };
 
 // Guest side ----------------------------------------------------------------------------

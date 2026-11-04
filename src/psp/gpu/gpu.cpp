@@ -1,3 +1,5 @@
+#include "../../../third_party/xbrz/xbrz.h"
+#include <thread>
 #include "psp/gpu/gpu.h"
 #include "psp/gpu/ads.h"
 #include "psp/gpu/button_glyphs.h"
@@ -177,6 +179,7 @@ struct TexEntry {
     uint64_t memHash = 0;
     uint64_t verifiedEpoch = ~0ull;
     int w = 0, h = 0;
+    int uploads = 0; // how often its contents changed: animated ones are not upscaled
 };
 
 uint32_t depthFuncGL(int f) {
@@ -814,6 +817,7 @@ bool Recorder::setupTexture(GlState& st, Ubo& u, const FboInfo& target) {
         }
     }
     if (upload) {
+        ++e.uploads;
         Op op{OP_UPLOAD_TEX};
         op.id = e.id;
         op.w = w;
@@ -828,6 +832,27 @@ bool Recorder::setupTexture(GlState& st, Ubo& u, const FboInfo& target) {
             int lw = 1 << (reg(CMD_TEXSIZE0 + l) & 0xF), lh = 1 << ((reg(CMD_TEXSIZE0 + l) >> 8) & 0xF);
             decodeTexture(la, format, lw, lh, textureBufw(bw, format), swz, cs, px);
             if (l == 0) patchButtonGlyphs(px.data(), lw, lh);
+            const int up = g_settings.textureUpscale;
+            if (levels == 1 && up >= 2 && up <= 4 && lw * lh <= 512 * 512 && lw >= 4 && lh >= 4 && e.uploads <= 3) {
+                // Texture upscaling (remaster option): xBRZ, the pixel art scaler PPSSPP uses,
+                // enlarges the texture on upload; the shaders keep sampling it with the PSP's
+                // texel coordinates (normalised), so only the detail changes. Large textures are
+                // split in row slices over the CPU's cores.
+                std::vector<uint32_t> big((size_t)lw * lh * up * up);
+                const int nth = std::clamp((int)std::thread::hardware_concurrency(), 1, 8);
+                if (lw * lh >= 128 * 128 && nth > 1) {
+                    std::vector<std::thread> th;
+                    const int rows = (lh + nth - 1) / nth;
+                    for (int t = 0; t < nth; ++t)
+                        th.emplace_back([&, t] { xbrz::scale(up, px.data(), big.data(), lw, lh, xbrz::ColorFormat::ARGB, xbrz::ScalerCfg(), t * rows, std::min(lh, (t + 1) * rows)); });
+                    for (auto& x : th) x.join();
+                } else {
+                    xbrz::scale(up, px.data(), big.data(), lw, lh, xbrz::ColorFormat::ARGB);
+                }
+                px.swap(big);
+                lw *= up;
+                lh *= up;
+            }
             size_t off = frame_->blob.size();
             frame_->blob.resize(off + px.size() * 4);
             std::memcpy(frame_->blob.data() + off, px.data(), px.size() * 4);
@@ -838,7 +863,7 @@ bool Recorder::setupTexture(GlState& st, Ubo& u, const FboInfo& target) {
             char path[512];
             std::snprintf(path, sizeof path, "%s/tex%04d_%08x_f%d_%dx%d_clut%06x.png", dir, e.id, addr, format, w, h,
                           clutFmt ? reg(CMD_CLUTFORMAT) : 0);
-            stbi_write_png(path, w, h, 4, frame_->blob.data() + op.blob, w * 4);
+            stbi_write_png(path, op.levels[0].first, op.levels[0].second, 4, frame_->blob.data() + op.blob, op.levels[0].first * 4);
         }
         frame_->ops.push_back(op);
         e.w = w;

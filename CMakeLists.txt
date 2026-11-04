@@ -93,6 +93,7 @@ add_library(ca_psp OBJECT
   src/psp/gpu/minimap.cpp
   src/psp/gpu/vertex_decoder.cpp
   src/psp/gpu/texture_decoder.cpp
+  third_party/xbrz/xbrz.cpp
   src/render/GL.cpp
   src/psp/ppsspp/InterpreterVFPU.cpp
   src/psp/ppsspp/MIPSVFPUUtils.cpp

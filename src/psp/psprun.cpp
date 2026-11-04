@@ -374,6 +374,7 @@ int runWithGl(const psp::kernel::BootOptions& opt, int scale, std::vector<std::p
     gs.scale = scale;
     gs.wideAspect = g_aspect;
     gs.enhancedTextures = std::getenv("CA_NO_ENHANCED") == nullptr;
+    if (const char* u = std::getenv("CA_TEX_UPSCALE")) gs.textureUpscale = std::atoi(u);
     psp::gpu::install(gs);
     if (const char* g = std::getenv("CA_GLYPH_LABELS")) { // cross,circle,square,triangle,l,r,start,select
         std::vector<std::string> v(1);

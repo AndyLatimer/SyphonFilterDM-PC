@@ -98,6 +98,7 @@ struct FrontSettings {
     bool forceLinearTextures = false;
     bool enhancedTextures = true; // mipmaps + anisotropic filtering on the world's textures
     int antialias = 1;            // supersampling: 0 off, 1 = 2x (the picture rendered twice as large)
+    int textureUpscale = 4;       // xBRZ texture upscaling: 0 off, 2..4
     float sharpen = 0.35f;        // presentation sharpening, 0..1
     float vivid = 0.3f;           // a little more contrast and colour, 0..1
     bool stretch = false;
@@ -198,6 +199,8 @@ void loadSettings(FrontSettings& s, ca::Ini& ini, const std::string& dir) {
     s.forceLinearTextures = getF(ini, "video", "force_linear_textures", 0) != 0;
     s.enhancedTextures = getF(ini, "video", "enhanced_textures", 1) != 0;
     s.antialias = std::clamp((int)getF(ini, "video", "antialias", 1), 0, 1);
+    s.textureUpscale = (int)getF(ini, "video", "texture_upscale", 4);
+    if (s.textureUpscale < 2 || s.textureUpscale > 4) s.textureUpscale = 0;
     s.sharpen = std::clamp(getF(ini, "video", "sharpen", 0.35f), 0.0f, 1.0f);
     s.vivid = std::clamp(getF(ini, "video", "vivid", 0.3f), 0.0f, 1.0f);
     s.stretch = getF(ini, "video", "stretch", 0) != 0;
@@ -317,6 +320,7 @@ void saveSettings(const FrontSettings& s, ca::Ini& ini, const std::string& dir) 
     ini.set("video", "force_linear_textures", s.forceLinearTextures ? "1" : "0");
     ini.set("video", "enhanced_textures", s.enhancedTextures ? "1" : "0");
     ini.set("video", "antialias", std::to_string(s.antialias));
+    ini.set("video", "texture_upscale", std::to_string(s.textureUpscale));
     ini.set("video", "sharpen", std::to_string(s.sharpen));
     ini.set("video", "vivid", std::to_string(s.vivid));
     ini.set("video", "stretch", s.stretch ? "1" : "0");
@@ -1004,6 +1008,9 @@ std::vector<ca::MenuItem> buildMenu(FrontSettings& s, SDL_Window* win, MenuState
     m.push_back(toggle("Suavizar la imagen", s.linearOutput));
     m.push_back(toggle("Texturas mejoradas (mipmaps + anisotrópico)", s.enhancedTextures, {}, "al reiniciar"));
     m.push_back(choice("Antialiasing", {"No", "Supermuestreo 2x"}, [&s] { return s.antialias; }, [&s](int k) { s.antialias = k; }, "al reiniciar"));
+    m.push_back(choice("Texturas en alta resolución (xBRZ)", {"No", "2x", "3x", "4x"},
+                       [&s] { return s.textureUpscale >= 2 ? s.textureUpscale - 1 : 0; },
+                       [&s](int k) { s.textureUpscale = k ? k + 1 : 0; }, "al reiniciar"));
     m.push_back(slider("Nitidez", s.sharpen, 0, 1, 0.05f, true));
     m.push_back(slider("Viveza del color", s.vivid, 0, 1, 0.05f, true));
     m.push_back(toggle("Teclas del PC en las ayudas", s.pcButtonHints, {}, "al reiniciar"));
@@ -1089,6 +1096,7 @@ std::vector<ca::MenuItem> buildMenu(FrontSettings& s, SDL_Window* win, MenuState
         {"Apuntar con la mira activado", "El arma sube a la altura de los ojos y se cierra el campo de visión."},
         {"Campo de visión", "Grados en horizontal (el juego usa 80). Otro valor deja los brillos de dianas y marcas desplazados."},
         {"Texturas mejoradas (mipmaps + anisotrópico)", "Suelos y paredes lejanos nítidos y sin parpadeo a resoluciones altas."},
+        {"Texturas en alta resolución (xBRZ)", "Amplía texturas, textos y HUD al cargarlos (el escalador de PPSSPP). 4x: textos más finos."},
         {"Antialiasing", "Dibuja el juego al doble de resolución y lo reduce: bordes y textos sin dientes de sierra."},
         {"Nitidez", "Realza los detalles de la imagen final (0 = la imagen tal cual)."},
         {"Viveza del color", "Algo más de contraste y color (0 = los colores originales)."},
@@ -1196,6 +1204,7 @@ int main(int argc, char** argv) {
     if (s.antialias) gs.scale = std::min(gs.scale * 2, 6);
     gs.forceLinear = s.forceLinearTextures;
     gs.enhancedTextures = s.enhancedTextures;
+    gs.textureUpscale = s.textureUpscale;
     // Hor+: the PSP's 480x272 is ~16:9; wider windows see more to the sides (set at start-up).
     if (s.widescreen && dw > 0 && dh > 0 && (float)dw / dh > 480.0f / 272.0f + 0.01f) gs.wideAspect = (float)dw / dh;
     psp::gpu::install(gs);

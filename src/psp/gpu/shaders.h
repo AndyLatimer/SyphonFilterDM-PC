@@ -152,15 +152,16 @@ static const char* kFragmentShader =
     // 2D drawn texel for pixel (fonts, HUD): keep bilinear sampling inside the glyph's own
     // texels, so a render scale above 1 does not pull in its neighbours in the font atlas.
     "    if (vClamp.z == -12345.0) {\n"
-    "      vec2 lo = floor(vClamp.xy / 4096.0) * 0.5, hi = mod(vClamp.xy, 4096.0) * 0.5;\n"
-    "      vec2 tx = uv * uTexSize.xy;\n"
+    "      vec2 up = vec2(textureSize(uTex, 0)) / uTexSize.xy;\n" // > 1 when the texture was upscaled
+    "      vec2 lo = floor(vClamp.xy / 4096.0) * 0.5 * up, hi = mod(vClamp.xy, 4096.0) * 0.5 * up;\n"
+    "      vec2 tx = uv * uTexSize.xy * up;\n"
     // Sharp bilinear: whole texels at the render scale with a one-pixel blend between them, so
     // upscaled text stays crisp instead of blurred.
     "      vec2 k = 1.0 / max(fwidth(tx), vec2(1e-4));\n"
     "      vec2 c0 = floor(tx - 0.5) + 0.5;\n"
     "      tx = c0 + clamp((tx - c0 - 0.5) * k + 0.5, 0.0, 1.0);\n"
     "      vec2 a = lo + 0.5, b = max(a, hi - 0.5);\n"
-    "      uv = clamp(tx, a, b) / uTexSize.xy;\n"
+    "      uv = clamp(tx, a, b) / (uTexSize.xy * up);\n"
     "    }\n"
     "    vec4 t = texture(uTex, uv);\n"
     "    int func = int(uTexEnv.w + 0.5);\n"
