@@ -502,9 +502,11 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
     }
     in.confirmWasHeld = confirm;
     for (int i = 0; i < 12; ++i) if (held[i]) buttons |= kInputButtons[i];
-    // R1 held (weapon select on the right button): the pad's face buttons are the PSP's again,
-    // the weapon slots of its selection screen.
-    if (in.pad && SDL_GameControllerGetButton(in.pad, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) {
+    // Weapon select held (the PSP's right button: d-pad right, R1 or Q): the pad's face buttons
+    // are the PSP's again, the weapon slots of its selection screen; the right stick and the
+    // movement keys pick a slot by direction too (below).
+    const bool weaponSelect = held[IN_RIGHT];
+    if (in.pad && weaponSelect) {
         const std::pair<SDL_GameControllerButton, uint32_t> face[] = {
             {SDL_CONTROLLER_BUTTON_A, psp::host::BTN_CROSS}, {SDL_CONTROLLER_BUTTON_B, psp::host::BTN_CIRCLE},
             {SDL_CONTROLLER_BUTTON_X, psp::host::BTN_SQUARE}, {SDL_CONTROLLER_BUTTON_Y, psp::host::BTN_TRIANGLE}};
@@ -581,7 +583,14 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
         ca::Vec2 r = ca::applyRadialDeadzone(rx, ry, s.deadzoneRight);
         in.padAimX = in.padAimY = 0;
         float mag = std::sqrt(r.x * r.x + r.y * r.y);
-        if (mag > 0 && !psp::host::g_directAim.load()) {
+        if (weaponSelect) {
+            // Weapon selection: the right stick points at a slot (up triangle, right circle,
+            // down cross, left square) instead of turning the camera.
+            if (mag > 0.5f) {
+                if (std::fabs(r.x) > std::fabs(r.y)) buttons |= r.x > 0 ? psp::host::BTN_CIRCLE : psp::host::BTN_SQUARE;
+                else buttons |= r.y > 0 ? psp::host::BTN_CROSS : psp::host::BTN_TRIANGLE;
+            }
+        } else if (mag > 0 && !psp::host::g_directAim.load()) {
             const float vx = r.x * (s.padInvertX ? -1.0f : 1.0f), vy = r.y * (s.padInvertY ? -1.0f : 1.0f);
             if (s.aimScheme == 1) {
                 // Advanced scheme: the PSP analog stick is the game's free aim. Its response only
@@ -615,6 +624,15 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
     if (held[IN_STICK_RIGHT]) ax = keyStick;
     if (held[IN_STICK_UP]) ay = -keyStick;
     if (held[IN_STICK_DOWN]) ay = keyStick;
+    if (weaponSelect && (held[IN_STICK_UP] || held[IN_STICK_DOWN] || held[IN_STICK_LEFT] || held[IN_STICK_RIGHT])) {
+        // Weapon selection on the keyboard: the movement keys pick the slot (W triangle,
+        // D circle, S cross, A square) while the select key is held.
+        if (held[IN_STICK_UP]) buttons |= psp::host::BTN_TRIANGLE;
+        if (held[IN_STICK_RIGHT]) buttons |= psp::host::BTN_CIRCLE;
+        if (held[IN_STICK_DOWN]) buttons |= psp::host::BTN_CROSS;
+        if (held[IN_STICK_LEFT]) buttons |= psp::host::BTN_SQUARE;
+        ax = ay = 0;
+    }
     if (onPcRow) ax = 0;
     if (ax != 0 && ay != 0 && (held[IN_STICK_LEFT] || held[IN_STICK_RIGHT]) && (held[IN_STICK_UP] || held[IN_STICK_DOWN])) {
         ax *= 0.7071f;

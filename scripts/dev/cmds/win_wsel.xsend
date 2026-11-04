@@ -1,0 +1,12 @@
+wait 25
+key q down
+wait 0.3
+key a down
+wait 0.3
+key a up
+key w down
+wait 0.3
+key w up
+wait 0.2
+key q up
+wait 1
