@@ -345,6 +345,8 @@ void controlThread(std::string path) {
                 psp::gpu::setSkipFramebufferTextures(std::atoi(arg) != 0);
             } else if (c == "fps") { // frame rate: 60, 30 or 0 (the game's)
                 psp::host::g_targetFps = std::atoi(arg);
+            } else if (c == "enhanced") {
+                psp::gpu::setEnhancedTextures(std::atoi(arg) != 0);
             } else if (c == "maxdraw") {
                 psp::gpu::setMaxDraws(std::atoi(arg));
             } else if (c == "quit") {
@@ -371,6 +373,7 @@ int runWithGl(const psp::kernel::BootOptions& opt, int scale, std::vector<std::p
     psp::gpu::Settings gs;
     gs.scale = scale;
     gs.wideAspect = g_aspect;
+    gs.enhancedTextures = std::getenv("CA_NO_ENHANCED") == nullptr;
     psp::gpu::install(gs);
     if (const char* g = std::getenv("CA_GLYPH_LABELS")) { // cross,circle,square,triangle,l,r,start,select
         std::vector<std::string> v(1);
@@ -444,6 +447,7 @@ int main(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--gl")) gl = true;
         else if (!std::strcmp(argv[i], "--control") && i + 1 < argc) std::thread(controlThread, std::string(argv[++i])).detach();
         else if (!std::strcmp(argv[i], "--scale") && i + 1 < argc) scale = std::atoi(argv[++i]);
+        else if (!std::strcmp(argv[i], "--fov") && i + 1 < argc) psp::host::g_adsSettings.normalFov = (float)std::atof(argv[++i]); // the PC field of view (front end default 85)
         else if (!std::strcmp(argv[i], "--aspect") && i + 1 < argc) g_aspect = (float)std::atof(argv[++i]);
         else if (!std::strcmp(argv[i], "--shot") && i + 1 < argc) {
             std::string spec = argv[++i];

@@ -1,0 +1,4 @@
+wait 2
+shot fv.png
+matdump 1
+wait 2

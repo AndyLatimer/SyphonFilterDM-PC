@@ -136,3 +136,13 @@ Método: volcados de RAM de usuario (`ca_psprun` `memdump`) con ○/□/△ mant
   de cubrirse repite empujar 0,6 s / soltar 0,6 s tres veces; probado en el ejecutable de PC
   (`scripts/dev/windowed_test.sh scripts/dev/cmds/win_cover3.xsend`) parando antes de la caja.
 - El stick del PC ahora llega a 0 y 255 a fondo (antes 1..255: 128 ± 127).
+
+## 11. Brillos superpuestos y campo de visión; filtrado mejorado
+- Los brillos de dianas y marcas se dibujan también con proyección ortográfica, en la posición de
+  pantalla que da la proyección del juego. Con un campo de visión del PC distinto de 80° el
+  escenario cambia de escala y esos brillos no: quedaba un "aura" alrededor de las dianas desde que
+  el HUD ortográfico dejó de escalarse (§10). Campo de visión por defecto: 80 (el del juego); los
+  `controls.ini` con 85 se pasan a 80 una vez (`[ADS] FovVersion = 2`).
+- Texturas mejoradas (`[video] enhanced_textures`, por defecto 1): a las texturas de un solo nivel
+  se les generan mipmaps al subirlas y los dibujos 3D con filtro lineal (sin prueba alfa, para no
+  borrar rejas y vallas) usan trilineal + anisotrópico 16x. Los 2D siguen en el nivel 0.

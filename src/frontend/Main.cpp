@@ -96,6 +96,7 @@ struct FrontSettings {
     int renderScale = 0;    // 0 = from the window height
     bool linearOutput = true;
     bool forceLinearTextures = false;
+    bool enhancedTextures = true; // mipmaps + anisotropic filtering on the world's textures
     bool stretch = false;
     int widescreen = 1;     // 1: widen the view to the window's aspect (Hor+); 0: original 480x272
     bool pcButtonHints = true; // PC keys in place of the PSP button symbols
@@ -118,7 +119,7 @@ struct FrontSettings {
     bool adsEnabled = false; // Contagion's first-person ADS: not for this game
     bool adsToggle = false;  // Mode = Hold (false) or Toggle (true)
     float adsTransition = 0.18f;
-    float normalFov = 85.0f, adsFov = 65.0f;
+    float normalFov = 80.0f, adsFov = 65.0f; // 80: the game's own (glows drawn over the scene match it)
     float adsSens = 0.65f;   // look sensitivity multiplier while aiming
     bool adsHideCrosshair = true, adsAllowFire = true;
     // weapons.ini: [Weapon.NAME] (the game's internal name, e.g. g01) overrides of the above.
@@ -192,6 +193,7 @@ void loadSettings(FrontSettings& s, ca::Ini& ini, const std::string& dir) {
     s.renderScale = (int)getF(ini, "video", "render_scale", 0);
     s.linearOutput = getF(ini, "video", "linear_output", 1) != 0;
     s.forceLinearTextures = getF(ini, "video", "force_linear_textures", 0) != 0;
+    s.enhancedTextures = getF(ini, "video", "enhanced_textures", 1) != 0;
     s.stretch = getF(ini, "video", "stretch", 0) != 0;
     s.widescreen = (int)getF(ini, "video", "widescreen", 1);
     s.frameRate = (int)getF(ini, "video", "frame_rate", 60);
@@ -228,7 +230,11 @@ void loadSettings(FrontSettings& s, ca::Ini& ini, const std::string& dir) {
         s.adsToggle = mode == "toggle";
     }
     s.adsTransition = std::clamp(getF(ini, "ADS", "TransitionTime", 0.18f), 0.0f, 1.0f);
-    s.normalFov = std::clamp(getF(ini, "ADS", "NormalFOV", 85.0f), 50.0f, 120.0f);
+    // The field of view is the game's own (80) by default: its glows (targets, markers) are
+    // drawn as flat overlays at the screen positions its own projection gives, so any other
+    // field of view leaves them as a ghost around their objects. Older files had 85: reset once.
+    s.normalFov = std::clamp(getF(ini, "ADS", "NormalFOV", 80.0f), 50.0f, 120.0f);
+    if ((int)getF(ini, "ADS", "FovVersion", 1) < 2) s.normalFov = 80.0f;
     s.adsFov = std::clamp(getF(ini, "ADS", "ADSFOV", 65.0f), 20.0f, 120.0f);
     s.adsSens = std::clamp(getF(ini, "ADS", "ADSMouseSensitivityMultiplier", 0.65f), 0.05f, 2.0f);
     s.adsHideCrosshair = getB(ini, "ADS", "HideCrosshairWhileADS", true);
@@ -303,6 +309,7 @@ void saveSettings(const FrontSettings& s, ca::Ini& ini, const std::string& dir) 
     ini.set("video", "render_scale", std::to_string(s.renderScale));
     ini.set("video", "linear_output", s.linearOutput ? "1" : "0");
     ini.set("video", "force_linear_textures", s.forceLinearTextures ? "1" : "0");
+    ini.set("video", "enhanced_textures", s.enhancedTextures ? "1" : "0");
     ini.set("video", "stretch", s.stretch ? "1" : "0");
     ini.set("video", "widescreen", std::to_string(s.widescreen));
     ini.set("video", "frame_rate", std::to_string(s.frameRate));
@@ -326,6 +333,7 @@ void saveSettings(const FrontSettings& s, ca::Ini& ini, const std::string& dir) 
     ini.set("ADS", "Mode", s.adsToggle ? "Toggle" : "Hold");
     ini.set("ADS", "TransitionTime", fmt(s.adsTransition));
     ini.set("ADS", "NormalFOV", fmt(s.normalFov));
+    ini.set("ADS", "FovVersion", "2");
     ini.set("ADS", "ADSFOV", fmt(s.adsFov));
     ini.set("ADS", "ADSMouseSensitivityMultiplier", fmt(s.adsSens));
     ini.set("ADS", "HideCrosshairWhileADS", s.adsHideCrosshair ? "true" : "false");
@@ -968,6 +976,7 @@ std::vector<ca::MenuItem> buildMenu(FrontSettings& s, SDL_Window* win, MenuState
                        [&s](int k) { s.widescreen = k; }, "al reiniciar"));
     m.push_back(toggle("Estirar la imagen a la ventana", s.stretch));
     m.push_back(toggle("Suavizar la imagen", s.linearOutput));
+    m.push_back(toggle("Texturas mejoradas (mipmaps + anisotrópico)", s.enhancedTextures, {}, "al reiniciar"));
     m.push_back(toggle("Teclas del PC en las ayudas", s.pcButtonHints, {}, "al reiniciar"));
 
     m.push_back(header("Audio"));
@@ -1049,7 +1058,8 @@ std::vector<ca::MenuItem> buildMenu(FrontSettings& s, SDL_Window* win, MenuState
         {"Sensibilidad al apuntar con la mira", "Multiplica la velocidad del ratón y del mando mientras se apunta con la mira."},
         {"Modo de apuntado", "Mantener pulsado para apuntar, o pulsar una vez para alternar."},
         {"Apuntar con la mira activado", "El arma sube a la altura de los ojos y se cierra el campo de visión."},
-        {"Campo de visión", "Grados en horizontal para la imagen de 480x272 (el juego usa 80); más ancho en panorámico."},
+        {"Campo de visión", "Grados en horizontal (el juego usa 80). Otro valor deja los brillos de dianas y marcas desplazados."},
+        {"Texturas mejoradas (mipmaps + anisotrópico)", "Suelos y paredes lejanos nítidos y sin parpadeo a resoluciones altas."},
         {"Campo de visión al apuntar", "Campo de visión mientras se apunta con la mira (menor = más zoom)."},
         {"Duración de la transición (s)", "Tiempo que tarda el arma en ir de la cadera a la mira."},
         {"Ocultar la cruz al apuntar", "Quita la cruz del centro mientras se apunta con la mira."},
@@ -1151,6 +1161,7 @@ int main(int argc, char** argv) {
     psp::gpu::Settings gs;
     gs.scale = s.renderScale > 0 ? s.renderScale : std::clamp((dh + 271) / 272, 1, 8);
     gs.forceLinear = s.forceLinearTextures;
+    gs.enhancedTextures = s.enhancedTextures;
     // Hor+: the PSP's 480x272 is ~16:9; wider windows see more to the sides (set at start-up).
     if (s.widescreen && dw > 0 && dh > 0 && (float)dw / dh > 480.0f / 272.0f + 0.01f) gs.wideAspect = (float)dw / dh;
     psp::gpu::install(gs);

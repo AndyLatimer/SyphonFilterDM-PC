@@ -52,3 +52,7 @@ Mando (DualSense / Xbox), distribucion moderna:
   Options pausa, panel tactil ordenes. Teclado: V o boton central del raton para cubrirse,
   E usar, Ctrl agacharse, Q elegir arma.
   Si ya tenias controls.ini, los controles se pasan a esta distribucion la primera vez.
+
+Graficos: F1 > "Texturas mejoradas" (mipmaps + filtrado anisotropico, activado por defecto).
+El campo de vision por defecto es 80, el del juego: con otro valor los brillos de las dianas
+quedan desplazados.

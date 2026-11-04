@@ -110,6 +110,7 @@ struct GlState {
     int texId = 0;
     uint32_t minFilter = GL_NEAREST, magFilter = GL_NEAREST, wrapS = GL_REPEAT, wrapT = GL_REPEAT;
     int maxLevel = 0;
+    bool aniso = false; // enhanced 3D filtering: generated mipmaps + anisotropic
 };
 
 enum OpType { OP_CLEAR_FBO, OP_CREATE_FBO, OP_BIND_FBO, OP_UPLOAD_TEX, OP_UPLOAD_FBO_RECT, OP_DRAW, OP_BLIT_FBO, OP_PRESENT, OP_DELETE_TEX };
@@ -1198,6 +1199,16 @@ void Recorder::emit(std::vector<Vertex>& vin, int prim, bool through, bool hasCo
     }
     const bool textured = !clear && (reg(CMD_TEXTUREMAPENABLE) & 1);
     if (textured) setupTexture(op.st, ubo, target);
+    if (textured && g_settings.enhancedTextures && !through && prim != PRIM_RECTANGLES && op.st.texKind == 1 &&
+        op.st.maxLevel == 0 && op.st.minFilter == GL_LINEAR && op.st.magFilter == GL_LINEAR &&
+        !(reg(CMD_ALPHATESTENABLE) & 1)) { // cut-outs (fences, grates) would fade away in the mipmaps
+        // Remaster filtering for the world: the PSP had no mipmaps for most textures, so at a
+        // high render scale distant floors and walls shimmer. Mipmaps made on upload and
+        // anisotropic filtering keep them steady and sharp at grazing angles.
+        op.st.minFilter = GL_LINEAR_MIPMAP_LINEAR;
+        op.st.maxLevel = 1000;
+        op.st.aniso = true;
+    }
     ubo.texgen[3] = textured ? 1.0f : 0.0f;
     if (clear) {
         // Clear mode writes the vertex color and depth as they are.
@@ -1502,10 +1513,10 @@ void debugFrame(const Frame& fr) {
             ++shown;
             const float* v = &fr.verts[op.first * kFloatsPerVertex];
             const Ubo& u = fr.ubos[op.ubo];
-            std::fprintf(stderr, "  draw mode=%u n=%zu tex=%d/%d through=%g clear=%g sc=%d,%d,%d,%d fb=%gx%g v0=(%g,%g,%g) uv=(%g,%g) c=(%g,%g,%g,%g) mask=%d%d%d%d blend=%d depth=%d/%x filt=%x/%x\n",
+            std::fprintf(stderr, "  draw mode=%u n=%zu tex=%d/%d through=%g clear=%g sc=%d,%d,%d,%d fb=%gx%g v0=(%g,%g,%g) uv=(%g,%g) c=(%g,%g,%g,%g) mask=%d%d%d%d blend=%d depth=%d/%x filt=%x/%x ortho=%d\n",
                          op.glMode, op.count, op.st.texKind, op.st.texId, u.vpScale[3], u.texFlags[2], op.st.scissor[0], op.st.scissor[1],
                          op.st.scissor[2], op.st.scissor[3], u.offsetFb[2], u.offsetFb[3], v[0], v[1], v[2], v[6], v[7], v[8], v[9], v[10], v[11],
-                         op.st.colorMask[0], op.st.colorMask[1], op.st.colorMask[2], op.st.colorMask[3], op.st.blend, op.st.depthTest, op.st.depthFunc, op.st.minFilter, op.st.magFilter);
+                         op.st.colorMask[0], op.st.colorMask[1], op.st.colorMask[2], op.st.colorMask[3], op.st.blend, op.st.depthTest, op.st.depthFunc, op.st.minFilter, op.st.magFilter, (int)(u.proj[11] == 0.0f && u.proj[15] != 0.0f));
             if (full && std::getenv("CA_GPU_VERTS"))
                 for (size_t k = 0; k < op.count && k < 8; ++k) {
                     const float* w = &fr.verts[(op.first + k) * kFloatsPerVertex];
@@ -1568,6 +1579,10 @@ void execFrame(Frame& fr, PresentInfo& pinfo, bool& presented) {
                 glTexImage2D(GL_TEXTURE_2D, (GLint)l, GL_RGBA8, lw, lh, 0, GL_RGBA, GL_UNSIGNED_BYTE, fr.blob.data() + off);
                 off += (size_t)lw * lh * 4;
             }
+            if (op.levels.size() == 1 && g_settings.enhancedTextures) {
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1000);
+                glGenerateMipmap(GL_TEXTURE_2D); // used only by the enhanced 3D filtering
+            }
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (GLint)op.levels.size() - 1);
             break;
         }
@@ -1629,6 +1644,8 @@ void execFrame(Frame& fr, PresentInfo& pinfo, bool& presented) {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (GLint)op.st.wrapS);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (GLint)op.st.wrapT);
                 if (op.st.texKind == 1) glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, op.st.maxLevel);
+                if (op.st.texKind == 1 && g_settings.enhancedTextures)
+                    glTexParameterf(GL_TEXTURE_2D, 0x84FE /* GL_TEXTURE_MAX_ANISOTROPY */, op.st.aniso ? 16.0f : 1.0f);
             }
             glBindBuffer(GL_UNIFORM_BUFFER, g_exec.ubo);
             if (op.ubo != lastUbo || &fr != lastUboFrame) {
@@ -1767,6 +1784,7 @@ void renderShutdown() {}
 void dumpNextFrames(int n) { g_dumpFrames = n; }
 void dumpDrawMatrices(int n) { g_matrixDumpFrames = n; }
 void setMaxDraws(int n) { g_maxDraws = n; }
+void setEnhancedTextures(bool on) { g_settings.enhancedTextures = on; }
 void setSkipFramebufferTextures(bool b) { g_skipFbTex = b; }
 
 } // namespace psp::gpu

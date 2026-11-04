@@ -16,6 +16,7 @@ struct Settings {
     int scale = 2;            // internal resolution multiple of 480x272
     bool forceLinear = false; // bilinear filtering on every texture
     float wideAspect = 0;     // > 0: display buffers widened to this aspect (Hor+), e.g. 21/9
+    bool enhancedTextures = true; // 3D: mipmaps made for single-level textures + anisotropic filtering
 };
 
 // Guest side ----------------------------------------------------------------------------
@@ -42,6 +43,7 @@ int queuedFrames(); // frames recorded by the game and not executed yet
 // Reads the visible region of the last presented frame as RGBA8888, top row first.
 bool readPresented(const PresentInfo& p, std::vector<uint32_t>& rgba, int& w, int& h);
 void renderShutdown();
+void setEnhancedTextures(bool on); // debug: toggle the enhanced 3D filtering
 void dumpNextFrames(int n); // debug: log every draw of the next n frames
 void dumpDrawMatrices(int n); // debug: log the matrices of every 3D draw of the next n frames
 void setMaxDraws(int n);                    // debug: execute only the first n draws of each frame (-1 = all)
