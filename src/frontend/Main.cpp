@@ -97,6 +97,9 @@ struct FrontSettings {
     bool linearOutput = true;
     bool forceLinearTextures = false;
     bool enhancedTextures = true; // mipmaps + anisotropic filtering on the world's textures
+    int antialias = 1;            // supersampling: 0 off, 1 = 2x (the picture rendered twice as large)
+    float sharpen = 0.35f;        // presentation sharpening, 0..1
+    float vivid = 0.3f;           // a little more contrast and colour, 0..1
     bool stretch = false;
     int widescreen = 1;     // 1: widen the view to the window's aspect (Hor+); 0: original 480x272
     bool pcButtonHints = true; // PC keys in place of the PSP button symbols
@@ -194,6 +197,9 @@ void loadSettings(FrontSettings& s, ca::Ini& ini, const std::string& dir) {
     s.linearOutput = getF(ini, "video", "linear_output", 1) != 0;
     s.forceLinearTextures = getF(ini, "video", "force_linear_textures", 0) != 0;
     s.enhancedTextures = getF(ini, "video", "enhanced_textures", 1) != 0;
+    s.antialias = std::clamp((int)getF(ini, "video", "antialias", 1), 0, 1);
+    s.sharpen = std::clamp(getF(ini, "video", "sharpen", 0.35f), 0.0f, 1.0f);
+    s.vivid = std::clamp(getF(ini, "video", "vivid", 0.3f), 0.0f, 1.0f);
     s.stretch = getF(ini, "video", "stretch", 0) != 0;
     s.widescreen = (int)getF(ini, "video", "widescreen", 1);
     s.frameRate = (int)getF(ini, "video", "frame_rate", 60);
@@ -310,6 +316,9 @@ void saveSettings(const FrontSettings& s, ca::Ini& ini, const std::string& dir) 
     ini.set("video", "linear_output", s.linearOutput ? "1" : "0");
     ini.set("video", "force_linear_textures", s.forceLinearTextures ? "1" : "0");
     ini.set("video", "enhanced_textures", s.enhancedTextures ? "1" : "0");
+    ini.set("video", "antialias", std::to_string(s.antialias));
+    ini.set("video", "sharpen", std::to_string(s.sharpen));
+    ini.set("video", "vivid", std::to_string(s.vivid));
     ini.set("video", "stretch", s.stretch ? "1" : "0");
     ini.set("video", "widescreen", std::to_string(s.widescreen));
     ini.set("video", "frame_rate", std::to_string(s.frameRate));
@@ -793,12 +802,29 @@ const char* kBlitVs =
     "  vUV = vec2(p.x * uUV1.x, p.y * uUV1.y);\n"
     "  gl_Position = vec4(mix(uRect.x, uRect.z, p.x), mix(uRect.y, uRect.w, p.y), 0.0, 1.0);\n"
     "}\n";
+// Presentation, with the optional remaster touches: sharpening (unsharp mask over the output
+// pixels' neighbours) and a little more contrast and colour. The game's picture is sampled
+// through its mipmaps when it is supersampled (rendered larger than the window).
 const char* kBlitFs =
     "#version 330 core\n"
     "in vec2 vUV;\n"
     "uniform sampler2D uTex;\n"
+    "uniform float uSharp, uVivid;\n"
     "out vec4 fragColor;\n"
-    "void main() { fragColor = vec4(texture(uTex, vUV).rgb, 1.0); }\n";
+    "void main() {\n"
+    "  vec3 c = texture(uTex, vUV).rgb;\n"
+    "  if (uSharp > 0.0) {\n"
+    "    vec2 dx = vec2(dFdx(vUV.x), 0.0), dy = vec2(0.0, dFdy(vUV.y));\n"
+    "    vec3 n = texture(uTex, vUV + dx).rgb + texture(uTex, vUV - dx).rgb + texture(uTex, vUV + dy).rgb + texture(uTex, vUV - dy).rgb;\n"
+    "    c = clamp(c + uSharp * (c - n * 0.25), 0.0, 1.0);\n"
+    "  }\n"
+    "  if (uVivid > 0.0) {\n"
+    "    float l = dot(c, vec3(0.299, 0.587, 0.114));\n"
+    "    c = mix(vec3(l), c, 1.0 + 0.35 * uVivid);\n"
+    "    c = clamp((c - 0.5) * (1.0 + 0.15 * uVivid) + 0.5, 0.0, 1.0);\n"
+    "  }\n"
+    "  fragColor = vec4(c, 1.0);\n"
+    "}\n";
 const char* kOverlayFs =
     "#version 330 core\n"
     "in vec2 vUV;\n"
@@ -977,6 +1003,9 @@ std::vector<ca::MenuItem> buildMenu(FrontSettings& s, SDL_Window* win, MenuState
     m.push_back(toggle("Estirar la imagen a la ventana", s.stretch));
     m.push_back(toggle("Suavizar la imagen", s.linearOutput));
     m.push_back(toggle("Texturas mejoradas (mipmaps + anisotrópico)", s.enhancedTextures, {}, "al reiniciar"));
+    m.push_back(choice("Antialiasing", {"No", "Supermuestreo 2x"}, [&s] { return s.antialias; }, [&s](int k) { s.antialias = k; }, "al reiniciar"));
+    m.push_back(slider("Nitidez", s.sharpen, 0, 1, 0.05f, true));
+    m.push_back(slider("Viveza del color", s.vivid, 0, 1, 0.05f, true));
     m.push_back(toggle("Teclas del PC en las ayudas", s.pcButtonHints, {}, "al reiniciar"));
 
     m.push_back(header("Audio"));
@@ -1060,6 +1089,9 @@ std::vector<ca::MenuItem> buildMenu(FrontSettings& s, SDL_Window* win, MenuState
         {"Apuntar con la mira activado", "El arma sube a la altura de los ojos y se cierra el campo de visión."},
         {"Campo de visión", "Grados en horizontal (el juego usa 80). Otro valor deja los brillos de dianas y marcas desplazados."},
         {"Texturas mejoradas (mipmaps + anisotrópico)", "Suelos y paredes lejanos nítidos y sin parpadeo a resoluciones altas."},
+        {"Antialiasing", "Dibuja el juego al doble de resolución y lo reduce: bordes y textos sin dientes de sierra."},
+        {"Nitidez", "Realza los detalles de la imagen final (0 = la imagen tal cual)."},
+        {"Viveza del color", "Algo más de contraste y color (0 = los colores originales)."},
         {"Campo de visión al apuntar", "Campo de visión mientras se apunta con la mira (menor = más zoom)."},
         {"Duración de la transición (s)", "Tiempo que tarda el arma en ir de la cadera a la mira."},
         {"Ocultar la cruz al apuntar", "Quita la cruz del centro mientras se apunta con la mira."},
@@ -1160,6 +1192,8 @@ int main(int argc, char** argv) {
     SDL_GL_GetDrawableSize(win, &dw, &dh);
     psp::gpu::Settings gs;
     gs.scale = s.renderScale > 0 ? s.renderScale : std::clamp((dh + 271) / 272, 1, 8);
+    // Antialiasing by supersampling: twice the resolution, averaged down to the window.
+    if (s.antialias) gs.scale = std::min(gs.scale * 2, 6);
     gs.forceLinear = s.forceLinearTextures;
     gs.enhancedTextures = s.enhancedTextures;
     // Hor+: the PSP's 480x272 is ~16:9; wider windows see more to the sides (set at start-up).
@@ -1548,8 +1582,14 @@ int main(int argc, char** argv) {
             glUniform1i(glGetUniformLocation(blit, "uTex"), 0);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, frame.texture);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, s.linearOutput ? GL_LINEAR : GL_NEAREST);
+            // Supersampled: averaged down through mipmaps (the picture is twice the window's size).
+            const bool ssaa = s.antialias && s.linearOutput;
+            if (ssaa) glGenerateMipmap(GL_TEXTURE_2D);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, ssaa ? GL_LINEAR_MIPMAP_LINEAR : (s.linearOutput ? GL_LINEAR : GL_NEAREST));
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, s.linearOutput ? GL_LINEAR : GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, ssaa ? 1000 : 0);
+            glUniform1f(glGetUniformLocation(blit, "uSharp"), s.sharpen);
+            glUniform1f(glGetUniformLocation(blit, "uVivid"), s.vivid);
             glBindVertexArray(vao);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         }

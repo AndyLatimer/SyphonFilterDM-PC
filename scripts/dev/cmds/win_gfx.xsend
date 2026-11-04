@@ -1,0 +1,20 @@
+wait 30
+key Return tap
+wait 6
+key Escape tap
+wait 8
+key Return tap
+wait 8
+key Return tap
+wait 10
+key Return tap
+wait 10
+key Return tap
+wait 10
+key Return tap
+wait 10
+key Return tap
+wait 90
+shot g0.png
+wait 3
+shot g1.png

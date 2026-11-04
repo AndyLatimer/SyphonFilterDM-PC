@@ -146,3 +146,10 @@ Método: volcados de RAM de usuario (`ca_psprun` `memdump`) con ○/□/△ mant
 - Texturas mejoradas (`[video] enhanced_textures`, por defecto 1): a las texturas de un solo nivel
   se les generan mipmaps al subirlas y los dibujos 3D con filtro lineal (sin prueba alfa, para no
   borrar rejas y vallas) usan trilineal + anisotrópico 16x. Los 2D siguen en el nivel 0.
+
+## 12. Presentación "remaster" (front end)
+- Antialiasing por supermuestreo (`[video] antialias = 1`, por defecto): el juego se dibuja al
+  doble de la escala (tope 6x) y se reduce a la ventana con mipmaps del fotograma. Suaviza bordes
+  del escenario y también el texto pixelado de la fuente de la PSP.
+- Nitidez (`sharpen`, 0,35) y viveza del color (`vivid`, 0,3) en el sombreador de presentación;
+  0 deja la imagen original. Probado en el ejecutable (`scripts/dev/cmds/win_gfx.xsend`).

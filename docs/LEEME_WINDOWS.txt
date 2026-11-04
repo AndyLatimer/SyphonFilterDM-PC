@@ -56,3 +56,5 @@ Mando (DualSense / Xbox), distribucion moderna:
 Graficos: F1 > "Texturas mejoradas" (mipmaps + filtrado anisotropico, activado por defecto).
 El campo de vision por defecto es 80, el del juego: con otro valor los brillos de las dianas
 quedan desplazados.
+Antialiasing (supermuestreo 2x), Nitidez y Viveza del color: F1 > Video. Si notas que va
+lento, quita el antialiasing o baja la resolucion interna.
