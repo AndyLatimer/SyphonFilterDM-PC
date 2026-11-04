@@ -1,0 +1,22 @@
+stick 128 0
+wait 1.4
+release
+wait 1.5
+stick 128 0
+wait 1.5
+release
+wait 1
+shot pk0.png
+stick 128 0
+wait 0.5
+hold CIRCLE
+wait 0.8
+shot pk1.png
+release
+wait 0.5
+stick 255 128
+wait 1.5
+hold CIRCLE
+wait 0.8
+shot pk2.png
+release

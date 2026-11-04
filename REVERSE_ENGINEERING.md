@@ -176,3 +176,7 @@ Método: volcados de RAM de usuario (`ca_psprun` `memdump`) con ○/□/△ mant
   aceleración ni inercia. Activa `g_directAim`: el front end deja de simular botones de mirar.
 - Comprobado con `ca_psprun` (`aim 0.5 0` gira 0,61 rad; `aim -1 0`, 1,02) y en el ejecutable con
   movimientos reales del ratón (XTest).
+- En cobertura / asomado, el apuntado usa otro objeto de giro con el mismo filtro, llamado desde
+  0x08a1db08 (dirección de retorno 0x08a1db10). El gancho trata los dos; el movimiento se toma una
+  vez por fotograma y ambos reciben la misma velocidad. Probado asomado sobre la caja del
+  entrenamiento 1 (`aim` a derecha e izquierda gira la vista).
