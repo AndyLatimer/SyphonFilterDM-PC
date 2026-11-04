@@ -122,3 +122,15 @@ Método: volcados de RAM de usuario (`ca_psprun` `memdump`) con ○/□/△ mant
   guarda la RAM y los dibujos del siguiente fotograma.
 - Siguiente paso: con una captura F8 delante de la puerta, ver si hay dibujos con traslación junto
   al candado (si no los hay, el juego no lo manda dibujar: lógica; si los hay, es el renderizador).
+
+## 10. HUD en proyección ortográfica
+- El radar y el panel del arma se dibujan en modo transformado con proyección ortográfica
+  (escala 2/480 × 2/272, w constante), no en modo "through"; el contador de munición y los textos
+  sí van en "through". Volcado `matdump` con `--aspect 2.36`.
+- Consecuencias que había en el port: el campo de visión del PC (85° frente a 80°) escalaba
+  también el HUD ortográfico y lo separaba del contador de munición; y el panorámico (Hor+)
+  enseñaba marcos que el juego deja fuera de x 0..480 (las "flechas" de los bordes). El
+  renderizador ya no aplica ninguna de las dos cosas a proyecciones ortográficas.
+- Cobertura: el gesto del juego (soltar el stick junto a la superficie y volver a empujar) pega
+  a Gabe a cajas y contenedores; el botón de cubrirse del port lo hace: 0,35 s hacia delante,
+  0,3 s suelto y 0,5 s hacia delante (probado parando antes de la caja).

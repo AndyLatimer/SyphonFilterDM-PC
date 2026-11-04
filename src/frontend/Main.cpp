@@ -659,7 +659,7 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
         ay = padAiming ? in.padAimY : (std::fabs(in.aimStickY) < 0.05f ? 0.0f : in.aimStickY);
     }
     // Snap to cover: the game snaps when the stick, let go next to a wall, is pushed into it.
-    // The cover button does that gesture: 0.25 s at rest, then 0.45 s pushed the way Gabe was
+    // The cover button does that gesture: 0.35 s pushed, 0.3 s at rest, then 0.5 s pushed the way Gabe was
     // last moved (forward if he was standing).
     {
         static bool coverWasHeld = false;
@@ -673,8 +673,10 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
         coverWasHeld = held[IN_COVER];
         if (in.coverStartUs) {
             const uint64_t t = nowUs - in.coverStartUs;
-            if (t < 250000) { ax = ay = 0; }
-            else if (t < 700000) { ax = in.coverX; ay = in.coverY; }
+            // Walk up to the wall first (if Gabe stopped short of it), let go, then push.
+            if (t < 350000) { ax = in.coverX; ay = in.coverY; }
+            else if (t < 650000) { ax = ay = 0; }
+            else if (t < 1150000) { ax = in.coverX; ay = in.coverY; }
             else in.coverStartUs = 0;
         }
     }

@@ -1,0 +1,23 @@
+hold CIRCLE
+wait 0.9
+release
+stick 128 0
+wait 2
+release
+shot ct_0.png
+wait 0.25
+stick 128 0
+wait 0.5
+release
+wait 1.2
+shot ct_1.png
+hold TRIANGLE
+wait 0.2
+release
+wait 1.5
+shot ct_2.png
+hold TRIANGLE
+wait 1.0
+release
+wait 1.5
+shot ct_3.png

@@ -1,0 +1,20 @@
+stick 0 128
+wait 2.5
+shot cw_0.png
+release
+wait 0.25
+stick 0 128
+wait 0.45
+release
+wait 1.2
+shot cw_1.png
+stick 255 128
+wait 2.5
+shot cw_2.png
+release
+wait 0.25
+stick 255 128
+wait 0.45
+release
+wait 1.2
+shot cw_3.png

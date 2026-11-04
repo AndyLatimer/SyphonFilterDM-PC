@@ -1,0 +1,2 @@
+wait 6
+shot or0.png

@@ -1,0 +1,5 @@
+wait 6
+shot sk0.png
+skipfbtex 1
+wait 1
+shot sk1.png

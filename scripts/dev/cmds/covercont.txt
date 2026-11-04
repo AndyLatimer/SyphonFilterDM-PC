@@ -1,0 +1,37 @@
+stick 128 0
+wait 1.4
+release
+hold UP
+wait 1.5
+release
+wait 1
+stick 128 0
+wait 0.6
+stick 255 128
+wait 1.2
+release
+shot cc_0.png
+wait 0.3
+stick 255 128
+wait 0.5
+release
+wait 1.2
+shot cc_1.png
+hold CIRCLE
+wait 0.9
+release
+wait 0.5
+stick 128 0
+wait 0.6
+release
+wait 0.3
+stick 128 0
+wait 0.5
+release
+wait 1.2
+shot cc_2.png
+hold TRIANGLE
+wait 0.2
+release
+wait 1.5
+shot cc_3.png

@@ -1176,7 +1176,12 @@ void Recorder::emit(std::vector<Vertex>& vin, int prim, bool through, bool hasCo
     if (!through) ads_.observe(mtx_.view, mtx_.world, ((reg(CMD_VERTEXTYPE) >> 9) & 3) != 0, vin);
     else if (ads_.hide2D(vin)) return;
     buildUbo(ubo, target, through, hasColor);
-    if (!through) ads_.adjust(mtx_.view, ubo.vpScale[0], ubo.view, ubo.proj);
+    // Dark Mirror draws its HUD (radar, weapon panel) in transform mode with an orthographic
+    // projection (w constant): 2D in all but name. It keeps the PSP's placement: no field of view
+    // change (that shrank it towards the middle, away from the ammo counter drawn in through mode)
+    // and no Hor+ reveal of what the game keeps off screen past x 0..480 (frames at the edges).
+    const bool orthoHud = !through && mtx_.proj[11] == 0.0f && mtx_.proj[15] != 0.0f;
+    if (!through && !orthoHud) ads_.adjust(mtx_.view, ubo.vpScale[0], ubo.view, ubo.proj);
 
     premulBlend_ = false;
     alphaOverride_ = false;
@@ -1294,7 +1299,7 @@ void Recorder::emit(std::vector<Vertex>& vin, int prim, bool through, bool hasCo
             ubo.wide[1] = 1.0f;
             op.st.scissor[0] = (int)std::floor(op.st.scissor[0] * k);
             op.st.scissor[2] = fullScissor ? target.glW() : (int)std::ceil(op.st.scissor[2] * k);
-        } else if (!through && fullScissor) {
+        } else if (!through && fullScissor && !orthoHud) {
             op.st.scissor[2] = target.glW();
         } else {
             op.st.scissor[0] += target.extra;
