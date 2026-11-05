@@ -48,7 +48,7 @@ Mando (DualSense / Xbox), distribucion moderna:
   Stick izquierdo mover, stick derecho camara, R2 disparar, L2 apuntar / fijar blanco,
   L1 cubrirse (pegarse a la pared o caja que tengas delante), R1 mantenido apuntar sobre el
   hombro (la vista se acerca y la camara va mas despacio), Cuadrado usar / trepar / coger,
-  Circulo agacharse, flecha derecha mantenida elegir arma (mientras, Cuadrado, Circulo,
+  Circulo agacharse, flecha derecha (armas) o izquierda (gafas y accesorios) mantenida (mientras, Cuadrado, Circulo,
   Triangulo y Cruz, o el stick derecho hacia izquierda/derecha/arriba/abajo, eligen la ranura
   como en la PSP; en teclado, Q mantenida y W/A/S/D), Cruz aceptar, Triangulo atras,
   Options pausa, panel tactil ordenes. Teclado: V o boton central del raton para cubrirse,

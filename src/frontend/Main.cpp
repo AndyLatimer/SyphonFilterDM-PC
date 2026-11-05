@@ -514,7 +514,8 @@ void updateController(const FrontSettings& s, InputState& in, bool focused, floa
     // Weapon select held (the PSP's right button: d-pad right, R1 or Q): the pad's face buttons
     // are the PSP's again, the weapon slots of its selection screen; the right stick and the
     // movement keys pick a slot by direction too (below).
-    const bool weaponSelect = held[IN_RIGHT];
+    // The gadget selection (goggles..., the PSP's left button: d-pad left or G) works the same way.
+    const bool weaponSelect = held[IN_RIGHT] || held[IN_LEFT];
     if (in.pad && weaponSelect) {
         const std::pair<SDL_GameControllerButton, uint32_t> face[] = {
             {SDL_CONTROLLER_BUTTON_A, psp::host::BTN_CROSS}, {SDL_CONTROLLER_BUTTON_B, psp::host::BTN_CIRCLE},

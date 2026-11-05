@@ -1,5 +1,5 @@
 wait 25
-key q down
+key g down
 wait 0.3
 key a down
 wait 0.3
@@ -8,5 +8,5 @@ key w down
 wait 0.3
 key w up
 wait 0.2
-key q up
+key g up
 wait 1
